@@ -9,7 +9,7 @@ cd glibc-adapter/ <br/>
 cmake -B build/debug -DCMAKE_BUILD_TYPE=Debug -GNinja <br/>
 cmake --build build/debug
 
-动态库路径：build/debug/src/libglibc-adapter.so
+动态库路径为build/debug/src/libglibc-adapter.so，库名不能修改，bionic linker64使用libglibc-adapter.so名加载该库，搜索路径为Android默认的搜索路径，如：/system/lib64/, /vendor/lib64/等，建议放在/vendor/lib64/路径下。
 
 ## 开发说明
 ### 主功能说明
@@ -71,8 +71,13 @@ ADAPT_INDIRECT(symbol) 表示符号适配，即bionic需要适配才能满足gnu
 1. 编写适配函数代码，所有适配函数使用static修饰，函数的命名规则为"adapt_classes"，"classes"表示类别名称。
 2. 在glibc_adapter_t数组末尾追加适配接口，也可以按照功能插入
 
+#### 函数名和变量名符号
+libc中，有些函数名或变量名为宏定义，实际符号与宏名不一致，如：stdin, stdout, stderr，为宏名，定义变量分别为_IO_2_1_stdin_, _IO_2_1_stdin_, _IO_2_1_stderr_等，需要对定义变量进行适配，而非stdin, stdout, stderr名进行适配，可参考src/stdio-apdater.c中对stdin, stdout, stderr等的适配实现
+
+使用以下命令，查看libc库导出的实际符号名
+> readelf -W --dyn-syms /lib/aarch64-linux-gnu/libc.so.6
+
 ##### 约束：
-- 每次在src/glibc-adapter.c中register_all_adapters函数末尾加上REGISTER_ADAPTERS_BY_CLASSES(XXX); XXX表示新增的适配接口类别
 - 所有适配接口都以"adapt_"开头，再接上适配函数的名称
 - 所有适配函数都需用static修复，否则可能会产生符号污染问题
 - 代码必须使用标准C语言实现，不能使用C++，否则导致加载报错，此时libc++库未调用初始化过程
