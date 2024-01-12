@@ -6,8 +6,12 @@ gnu libc adapte library
 
 > git clone https://src.ift.run/fde/glibc-adaptor.git <br/>
 cd glibc-adapter/ <br/>
-cmake -B build/debug -DCMAKE_BUILD_TYPE=Debug -GNinja <br/>
+cmake -B build/debug -DCMAKE_BUILD_TYPE=Debug -GNinja -DCMAKE_ANDROID_NDK=ndk-dir <br/>
 cmake --build build/debug
+
+CMAKE_ANDROID_NDK指定ndk路径，默认为"~/Android/Sdk/ndk/25.2.9519653"，指定的ndk版本建议与默认版本一致
+
+版本发布时，需将CMAKE_BUILD_TYPE改为Release。
 
 动态库路径为build/debug/src/libglibc-adapter.so，库名不能修改，bionic linker64使用libglibc-adapter.so名加载该库，搜索路径为Android默认的搜索路径，如：/system/lib64/, /vendor/lib64/等，建议放在/vendor/lib64/路径下。
 
