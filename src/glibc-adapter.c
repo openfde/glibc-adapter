@@ -60,6 +60,10 @@ static void register_all_adapters() {
   REGISTER_ADAPTERS_BY_CLASSES(stdio);
   REGISTER_ADAPTERS_BY_CLASSES(errno);
   REGISTER_ADAPTERS_BY_CLASSES(string);
+  REGISTER_ADAPTERS_BY_CLASSES(dlfcn);
+  REGISTER_ADAPTERS_BY_CLASSES(malloc);
+  REGISTER_ADAPTERS_BY_CLASSES(pthread);
+  REGISTER_ADAPTERS_BY_CLASSES(stdlib);
 }
 
 static void sort_adapters() {

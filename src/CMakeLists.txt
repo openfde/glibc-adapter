@@ -8,6 +8,10 @@ set(ADAPTER_FILES
     fcntl-adapter.c
     errno-adapter.c
     string-adapter.c
+    dlfcn-adapter.c
+    stdlib-adapter.c
+    pthread-adapter.c
+    malloc-adapter.c
 
     glibc-adapter.c
 )
