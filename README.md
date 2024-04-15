@@ -4,7 +4,7 @@ gnu libc adapte library
 
 ## 编译说明
 
-> git clone https://src.ift.run/fde/glibc-adaptor.git <br/>
+> git clone https://github.com/openfde/glibc-adapter.git <br/>
 cd glibc-adapter/ <br/>
 cmake -B build/debug -DCMAKE_BUILD_TYPE=Debug -GNinja -DCMAKE_ANDROID_NDK=ndk-dir <br/>
 cmake --build build/debug
