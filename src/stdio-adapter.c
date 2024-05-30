@@ -41,6 +41,12 @@ static FILE *adapt_fopen(const char *pathname, const char *mode) {
   return fp;
 }
 
+static FILE* adapt_fopen64(const char* pathname, const char* mode) {
+  FILE* fp = fopen(pathname, mode);
+  adapter_log("fopen filename %s, mode %s, fp %p", pathname, mode, fp);
+  return fp;
+}
+
 static FILE *adapt_fdopen(int fd, const char *mode) {
   FILE *fp = fdopen(fd, mode);
   adapter_log("fdopen fd %d, mode %s, fp %p", fd, mode, fp);
@@ -120,6 +126,16 @@ static FILE *adapt_freopen(const char *filename, const char *mode, FILE *fp) {
 static FILE *adapt_freopen64(const char *filename, const char *mode, FILE *fp) {
   adapter_log("freopen64 filename '%s' mode '%s' fp %p", filename, mode, fp);
   return freopen64(filename, mode, adapt_stdio_handle(fp));
+}
+
+static int adapt___isoc99_fscanf(FILE* fp, const char* fmt, ...) {
+  int ret = 0;
+  adapter_log("fscanf fp %p fmt '%s'", fp, fmt);
+  va_list args;
+  va_start(args, fmt);
+  ret = vfscanf(adapt_stdio_handle(fp), fmt, args);
+  va_end(args);
+  return ret;
 }
 
 static int adapt_fscanf(FILE *fp, const char *fmt, ...) {
@@ -280,6 +296,72 @@ static void adapt_setbuffer(FILE *fp, char *buf, int size) {
 
 static void adapt_setlinebuf(FILE *fp) { setlinebuf(adapt_stdio_handle(fp)); }
 
+int adapt___isoc99_sscanf(const char* str, const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  va_start(args, format);
+  ret = vsscanf(str, format, args);
+  va_end(args);
+  return ret;
+}
+
+static int adapt___fprintf_chk(FILE* stream, int flag, const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  (void)flag;
+  va_start(args, format);
+  ret = vfprintf(adapt_stdio_handle(stream), format, args);
+  va_end(args);
+  return ret;
+}
+
+static int adapt___printf_chk(int flag, const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  (void)flag;
+  va_start(args, format);
+  ret = vprintf(format, args);
+  va_end(args);
+  return ret;
+}
+
+extern int __vsnprintf_chk(char*, size_t, int, size_t, const char*, va_list);
+
+static int adapt___snprintf_chk(char* str, size_t maxlen, int flag, size_t strlen, const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  va_start(args, format);
+  ret = __vsnprintf_chk(str, maxlen, flag, strlen, format, args);
+  va_end(args);
+  return ret;
+}
+
+extern int __vsprintf_chk(char* dst, int, size_t dst_len_from_compiler, const char* format, va_list va);
+
+static int adapt___sprintf_chk(char* str, int flag, size_t strlen, const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  va_start(args, format);
+  ret = __vsprintf_chk(str, flag, strlen, format, args);
+  va_end(args);
+  return ret;
+}
+
+static int adapt___vasprintf_chk(char** restrict ptr, int flag, const char* restrict format, va_list arg) {
+  (void)flag;
+  return vasprintf(ptr, format, arg);
+}
+
+static int adapt___vfprintf_chk(FILE* fp, int flag, const char* format, va_list ap) {
+  (void)flag;
+  return vfprintf(adapt_stdio_handle(fp), format, ap);
+}
+
+static ssize_t adapt___getdelim(char** lineptr, size_t* n, int delimiter,
+  FILE* fp) {
+  return getdelim(lineptr, n, delimiter, adapt_stdio_handle(fp));
+}
+
 #if defined(_GNU_SOURCE)
 
 static int adapt_fflush_unlocked(FILE *fp) {
@@ -327,6 +409,7 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(_IO_2_1_stderr_),
 
     ADAPT_INDIRECT(fopen),
+    ADAPT_INDIRECT(fopen64),
     ADAPT_INDIRECT(fdopen),
     ADAPT_INDIRECT(popen),
     ADAPT_DIRECT(puts),
@@ -388,6 +471,20 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(putw),
     ADAPT_INDIRECT(setbuffer),
     ADAPT_INDIRECT(setlinebuf),
+
+    ADAPT_DIRECT(sscanf),
+    ADAPT_INDIRECT(__isoc99_sscanf),
+    ADAPT_INDIRECT(__isoc99_fscanf),
+
+    ADAPT_INDIRECT(__fprintf_chk),
+    ADAPT_INDIRECT(__printf_chk),
+    ADAPT_INDIRECT(__snprintf_chk),
+    ADAPT_INDIRECT(__sprintf_chk),
+    ADAPT_INDIRECT(__vasprintf_chk),
+    ADAPT_INDIRECT(__vfprintf_chk),
+
+
+    ADAPT_INDIRECT(__getdelim),
 
 #if defined(_GNU_SOURCE)
     ADAPT_INDIRECT(fflush_unlocked),

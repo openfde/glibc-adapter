@@ -31,6 +31,15 @@ static void adapt_bcopy(const void *src, void *dest, size_t n) {
 
 static void adapt_bzero(void *s, size_t n) { memset(s, 0, n); }
 
+// IFUNC
+static void* adapt_mesa_memmove() { return (void*)memmove; }
+
+// IFUNC
+static void* adapt_mesa_memset() { return (void*)memset; }
+
+// IFUNC
+static void* adapt_mesa_memcpy() { return (void*)memcpy; }
+
 static struct glibc_adapter_t string_adapters[] = {
     /* string.h */
     ADAPT_DIRECT(memccpy),
@@ -69,6 +78,10 @@ static struct glibc_adapter_t string_adapters[] = {
     ADAPT_DIRECT(strsignal),
     ADAPT_DIRECT(strcoll),
     ADAPT_DIRECT(strxfrm),
+
+    ADAPT_INDIRECT(mesa_memmove),
+    ADAPT_INDIRECT(mesa_memset),
+    ADAPT_INDIRECT(mesa_memcpy),
 
     /* strings.h */
     ADAPT_INDIRECT(index),

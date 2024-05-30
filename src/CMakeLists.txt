@@ -12,6 +12,7 @@ set(ADAPTER_FILES
     stdlib-adapter.c
     pthread-adapter.c
     malloc-adapter.c
+    dirent-adapter.c
 
     glibc-adapter.c
 )
