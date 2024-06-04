@@ -31,7 +31,8 @@ static char* adapt___realpath_chk(const char* path, char* resolved_path,
 static struct glibc_adapter_t stdlib_adapters[] = {
     ADAPT_DIRECT(system),
     ADAPT_DIRECT(realpath),
-    ADAPT_INDIRECT(__realpath_chk)
+    ADAPT_INDIRECT(__realpath_chk),
+    ADAPT_DIRECT(getenv)
 };
 
 void register_adapters_stdlib() { REGISTER_ADAPTERS_BY_CLASS(stdlib); }

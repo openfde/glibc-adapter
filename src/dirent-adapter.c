@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
+#include <fnmatch.h>
 
 #include "adapter-register.h"
 
@@ -25,7 +26,18 @@ static int adapt_scandir(const char* dirp, struct dirent*** namelist,
     return scandir(dirp, namelist, filter, compar);
 }
 
+static int adapt_scandir64(const char* dirp, struct dirent*** namelist,
+    int (*filter)(const struct dirent*),
+    int (*compar)(const struct dirent**,
+        const struct dirent**)) {
+    return scandir(dirp, namelist, filter, compar);
+}
+
 static int adapt_alphasort(const struct dirent** a, const struct dirent** b) {
+    return alphasort(a, b);
+}
+
+static int adapt_alphasort64(const struct dirent** a, const struct dirent** b) {
     return alphasort(a, b);
 }
 
@@ -35,6 +47,10 @@ static int adapt_versionsort(const struct dirent** a, const struct dirent** b) {
     assert(0);
     errno = EOPNOTSUPP;
     return -1;
+}
+
+static int adapt_fnmatch(const char* pattern, const char* string, int flags) {
+    return fnmatch(pattern, string, flags);
 }
 
 static struct glibc_adapter_t dirent_adapters[] = {
@@ -50,8 +66,11 @@ static struct glibc_adapter_t dirent_adapters[] = {
     ADAPT_DIRECT(telldir),
     ADAPT_DIRECT(dirfd),
     ADAPT_INDIRECT(scandir),
+    ADAPT_INDIRECT(scandir64),
     ADAPT_INDIRECT(alphasort),
+    ADAPT_INDIRECT(alphasort64),
     ADAPT_INDIRECT(versionsort),
+    ADAPT_INDIRECT(fnmatch),
 };
 
 void register_adapters_dirent() { REGISTER_ADAPTERS_BY_CLASS(dirent); }

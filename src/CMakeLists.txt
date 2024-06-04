@@ -13,6 +13,7 @@ set(ADAPTER_FILES
     pthread-adapter.c
     malloc-adapter.c
     dirent-adapter.c
+    regex-adapter.c
 
     glibc-adapter.c
 )

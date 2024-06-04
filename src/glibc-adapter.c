@@ -64,6 +64,8 @@ static void register_all_adapters() {
   REGISTER_ADAPTERS_BY_CLASSES(malloc);
   REGISTER_ADAPTERS_BY_CLASSES(pthread);
   REGISTER_ADAPTERS_BY_CLASSES(stdlib);
+  REGISTER_ADAPTERS_BY_CLASSES(dirent);
+  REGISTER_ADAPTERS_BY_CLASSES(regex);
 }
 
 static void sort_adapters() {

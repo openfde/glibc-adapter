@@ -5,17 +5,23 @@
 #include "adapter-register.h"
 
 static void *adapt_dlopen(const char *filename, int flag) {
-  adapter_log("filename %s flag %i", filename, flag);
-  return dlopen(filename, flag);
+  void* handle = dlopen(filename, flag);
+  if (handle) {
+    adapter_log("dlopen %s flag 0x%x, handle %p", filename, flag, handle);
+  }
+  else {
+    adapter_log("dlopen %s flag 0x%x. %s", filename, flag, dlerror());
+  }
+  return handle;
 }
 
 static void *adapt_dlsym(void *handle, const char *symbol) {
-  adapter_log("handle %p symbol %s", handle, symbol);
+  adapter_log("dlsym handle %p symbol %s", handle, symbol);
   return dlsym(handle, symbol);
 }
 
 static int adapt_dlclose(void *handle) {
-  adapter_log("handle %p", handle);
+  adapter_log("dlclose handle %p", handle);
   return dlclose(handle);
 }
 

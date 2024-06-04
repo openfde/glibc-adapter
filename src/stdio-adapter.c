@@ -362,6 +362,16 @@ static ssize_t adapt___getdelim(char** lineptr, size_t* n, int delimiter,
   return getdelim(lineptr, n, delimiter, adapt_stdio_handle(fp));
 }
 
+static int adapt___asprintf_chk(char** restrict ptr, int flag, const char* restrict format, ...) {
+  (void)flag;
+  int ret = 0;
+  va_list args;
+  va_start(args, format);
+  ret = vasprintf(ptr, format, args);
+  va_end(args);
+  return ret;
+}
+
 #if defined(_GNU_SOURCE)
 
 static int adapt_fflush_unlocked(FILE *fp) {
@@ -482,6 +492,7 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(__sprintf_chk),
     ADAPT_INDIRECT(__vasprintf_chk),
     ADAPT_INDIRECT(__vfprintf_chk),
+    ADAPT_INDIRECT(__asprintf_chk),
 
 
     ADAPT_INDIRECT(__getdelim),
