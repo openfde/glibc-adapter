@@ -8,6 +8,90 @@
 #include "adapter-register.h"
 
 
+#define mutex_kind_index_in_64bits_machine 4
+static pthread_mutex_t g_pthread_mutex_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t* get_or_initialize_real_mutex(pthread_mutex_t* mutex) {
+    assert(mutex);
+    pthread_mutex_t* real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+    if (!real_mutex) {
+        pthread_mutex_lock(&g_pthread_mutex_lock);
+        if (!real_mutex) {
+            // the kind has the same layout in aarch64 and x86_64
+            int mutex_kind = ((int*)mutex)[mutex_kind_index_in_64bits_machine];
+            // use PTHREAD_MUTEX_INITIALIZER to initialize mutex by user.
+            // warning: memory leak if user not call pthread_mutex_destory.
+            real_mutex = malloc(sizeof(pthread_mutex_t));
+            assert(real_mutex);
+            pthread_mutexattr_t attr;
+            pthread_mutexattr_init(&attr);
+            pthread_mutexattr_settype(&attr, mutex_kind);
+            if (pthread_mutex_init(real_mutex, &attr) == 0) {
+                *((uintptr_t*)mutex) = (uintptr_t)real_mutex;
+            }
+            else {
+                free(real_mutex);
+                real_mutex = NULL;
+            }
+        }
+        pthread_mutex_unlock(&g_pthread_mutex_lock);
+    }
+    return real_mutex;
+}
+
+static pthread_mutex_t g_pthread_cond_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t* get_or_initialize_real_cond(pthread_cond_t* cond) {
+    assert(cond);
+    pthread_cond_t* real_cond = (pthread_cond_t*)*(uintptr_t*)cond;
+    if (!real_cond) {
+        pthread_mutex_lock(&g_pthread_cond_lock);
+        if (!real_cond) {
+            // use PTHREAD_COND_INITIALIZER to initialize mutex by user.
+            // warning: memory leak if user not call pthread_cond_destory.
+            real_cond = malloc(sizeof(pthread_cond_t));
+            assert(real_cond);
+            pthread_condattr_t attr;
+            pthread_condattr_init(&attr);
+            if (pthread_cond_init(real_cond, &attr) == 0) {
+                *((uintptr_t*)cond) = (uintptr_t)real_cond;
+            }
+            else {
+                free(real_cond);
+                real_cond = NULL;
+            }
+        }
+        pthread_mutex_unlock(&g_pthread_cond_lock);
+    }
+    return real_cond;
+}
+
+
+static pthread_mutex_t g_pthread_rwlock_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t* get_or_initialize_real_rwlock(pthread_rwlock_t* rwlock) {
+    assert(rwlock);
+    pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    if (!real_rwlock) {
+        pthread_mutex_lock(&g_pthread_rwlock_lock);
+        if (!real_rwlock) {
+            // use PTHREAD_RWLOCK_INITIALIZER to initialize mutex by user.
+            // warning: memory leak if user not call pthread_rwlock_destory.
+            real_rwlock = malloc(sizeof(pthread_rwlock_t));
+            assert(real_rwlock);
+            pthread_rwlockattr_t attr;
+            pthread_rwlockattr_init(&attr);
+            if (pthread_rwlock_init(real_rwlock, &attr) == 0) {
+                *((uintptr_t*)rwlock) = (uintptr_t)real_rwlock;
+            }
+            else {
+                free(real_rwlock);
+                real_rwlock = NULL;
+            }
+        }
+        pthread_mutex_unlock(&g_pthread_rwlock_lock);
+    }
+    return real_rwlock;
+}
+
+
 static int adapt_pthread_create(pthread_t* thread, const pthread_attr_t* attr,
     void* (*start_routine) (void*), void* arg) {
     pthread_attr_t* real_attr = NULL;
@@ -146,18 +230,28 @@ static int adapt_pthread_mutex_init(pthread_mutex_t* restrict mutex,
     const pthread_mutexattr_t* restrict attr) {
     pthread_mutex_t* real_mutex = NULL;
     int pshared = PTHREAD_PROCESS_PRIVATE;
+    int ret = 0;
     if (attr != NULL) {
         pthread_mutexattr_getpshared(attr, &pshared);
     }
     if (pshared == PTHREAD_PROCESS_PRIVATE) {
         real_mutex = malloc(sizeof(pthread_mutex_t));
-        *((uintptr_t*)mutex) = (uintptr_t)real_mutex;
+        ret = pthread_mutex_init(real_mutex, attr);
+        if (ret == 0) {
+            *((uintptr_t*)mutex) = (uintptr_t)real_mutex;
+            return 0;
+        }
+        else if (real_mutex) {
+            free(real_mutex);
+        }
     }
     else {
         adapter_log("pthread_mutex_init: Not support process shared mutex!");
         assert(0);
+        ret = EINVAL;
     }
-    return pthread_mutex_init(real_mutex, attr);
+
+    return ret;
 }
 
 static int adapt_pthread_mutex_destroy(pthread_mutex_t* mutex) {
@@ -176,7 +270,13 @@ static int adapt_pthread_mutex_destroy(pthread_mutex_t* mutex) {
 }
 
 static int adapt_pthread_mutex_lock(pthread_mutex_t* mutex) {
-    pthread_mutex_t* real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+    if (!mutex) {
+        return 0;
+    }
+    pthread_mutex_t* real_mutex = get_or_initialize_real_mutex(mutex);
+    if (!real_mutex) {
+        return EAGAIN;
+    }
     return pthread_mutex_lock(real_mutex);
 }
 
@@ -185,17 +285,32 @@ static int adapt_pthread_mutex_unlock(pthread_mutex_t* mutex) {
         return 0;
     }
     pthread_mutex_t* real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+    if (!real_mutex) {
+        return 0;
+    }
     return pthread_mutex_unlock(real_mutex);
 }
 
 static int adapt_pthread_mutex_trylock(pthread_mutex_t* mutex) {
-    pthread_mutex_t* real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+    if (!mutex) {
+        return 0;
+    }
+    pthread_mutex_t* real_mutex = get_or_initialize_real_mutex(mutex);
+    if (!real_mutex) {
+        return EAGAIN;
+    }
     return pthread_mutex_trylock(real_mutex);
 }
 
 static int adapt_pthread_mutex_timedlock(pthread_mutex_t* restrict mutex,
     const struct timespec* restrict abstime) {
-    pthread_mutex_t* real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+    if (!mutex) {
+        return 0;
+    }
+    pthread_mutex_t* real_mutex = get_or_initialize_real_mutex(mutex);
+    if (!real_mutex) {
+        return EAGAIN;
+    }
     return pthread_mutex_timedlock(real_mutex, abstime);
 }
 
@@ -203,18 +318,26 @@ static int adapt_pthread_cond_init(pthread_cond_t* restrict cond,
     const pthread_condattr_t* restrict attr) {
     pthread_cond_t* real_cond = NULL;
     int pshared = PTHREAD_PROCESS_PRIVATE;
+    int ret = 0;
     if (attr != NULL) {
         pthread_condattr_getpshared(attr, &pshared);
     }
     if (pshared == PTHREAD_PROCESS_PRIVATE) {
         real_cond = malloc(sizeof(pthread_cond_t));
-        *((uintptr_t*)cond) = (uintptr_t)real_cond;
+        ret = pthread_cond_init(real_cond, attr);
+        if (ret == 0) {
+            *((uintptr_t*)cond) = (uintptr_t)real_cond;
+        }
+        else {
+            free(real_cond);
+        }
     }
     else {
         adapter_log("pthread_cond_init: Not support process shared conditional variables!");
         assert(0);
+        ret = EINVAL;
     }
-    return pthread_cond_init(real_cond, attr);
+    return ret;
 }
 
 static int adapt_pthread_cond_destroy(pthread_cond_t* cond) {
@@ -233,27 +356,39 @@ static int adapt_pthread_cond_destroy(pthread_cond_t* cond) {
 }
 
 static int adapt_pthread_cond_broadcast(pthread_cond_t* cond) {
-    pthread_cond_t* real_cond = (pthread_cond_t*)*(uintptr_t*)cond;
+    assert(cond);
+    pthread_cond_t* real_cond = get_or_initialize_real_cond(cond);
+    assert(real_cond);
     return pthread_cond_broadcast(real_cond);
 }
 
 static int adapt_pthread_cond_signal(pthread_cond_t* cond) {
-    pthread_cond_t* real_cond = (pthread_cond_t*)*(uintptr_t*)cond;
+    assert(cond);
+    pthread_cond_t* real_cond = get_or_initialize_real_cond(cond);
+    assert(real_cond);
     return pthread_cond_signal(real_cond);
 }
 
 static int adapt_pthread_cond_timedwait(pthread_cond_t* restrict cond,
     pthread_mutex_t* restrict mutex,
     const struct timespec* restrict abstime) {
-    pthread_cond_t* real_cond = (pthread_cond_t*)*(uintptr_t*)cond;
-    pthread_mutex_t* real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+    assert(cond);
+    assert(mutex);
+    pthread_cond_t* real_cond = get_or_initialize_real_cond(cond);
+    pthread_mutex_t* real_mutex = get_or_initialize_real_mutex(mutex);
+    assert(real_cond);
+    assert(real_mutex);
     return pthread_cond_timedwait(real_cond, real_mutex, abstime);
 }
 
 static int adapt_pthread_cond_wait(pthread_cond_t* restrict cond,
     pthread_mutex_t* restrict mutex) {
-    pthread_cond_t* real_cond = (pthread_cond_t*)*(uintptr_t*)cond;
-    pthread_mutex_t* real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+    assert(cond);
+    assert(mutex);
+    pthread_cond_t* real_cond = get_or_initialize_real_cond(cond);
+    pthread_mutex_t* real_mutex = get_or_initialize_real_mutex(mutex);
+    assert(real_cond);
+    assert(real_mutex);
     return pthread_cond_wait(real_cond, real_mutex);
 }
 
@@ -304,7 +439,11 @@ static int adapt_pthread_rwlock_init(pthread_rwlock_t* restrict rwlock,
 }
 
 static int adapt_pthread_rwlock_destroy(pthread_rwlock_t* rwlock) {
+    assert(rwlock);
     pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    if (!real_rwlock) {
+        return 0;
+    }
     int ret = pthread_rwlock_destroy(real_rwlock);
     free(real_rwlock);
     *((uintptr_t*)rwlock) = 0;
@@ -312,42 +451,52 @@ static int adapt_pthread_rwlock_destroy(pthread_rwlock_t* rwlock) {
 }
 
 static int adapt_pthread_rwlock_unlock(pthread_rwlock_t* rwlock) {
+    assert(rwlock);
     pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    if (!real_rwlock) {
+        return 0;
+    }
     return pthread_rwlock_unlock(real_rwlock);
 }
 
 static int adapt_pthread_rwlock_trywrlock(pthread_rwlock_t* rwlock) {
-    pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    pthread_rwlock_t* real_rwlock = get_or_initialize_real_rwlock(rwlock);
+    assert(real_rwlock);
     return pthread_rwlock_trywrlock(real_rwlock);
 }
 
 static int adapt_pthread_rwlock_wrlock(pthread_rwlock_t* rwlock) {
-    pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    pthread_rwlock_t* real_rwlock = get_or_initialize_real_rwlock(rwlock);
+    assert(real_rwlock);
     return pthread_rwlock_wrlock(real_rwlock);
 
 }
 
 static int adapt_pthread_rwlock_rdlock(pthread_rwlock_t* rwlock) {
-    pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    pthread_rwlock_t* real_rwlock = get_or_initialize_real_rwlock(rwlock);
+    assert(real_rwlock);
     return pthread_rwlock_rdlock(real_rwlock);
 
 }
 
 static int adapt_pthread_rwlock_tryrdlock(pthread_rwlock_t* rwlock) {
-    pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    pthread_rwlock_t* real_rwlock = get_or_initialize_real_rwlock(rwlock);
+    assert(real_rwlock);
     return pthread_rwlock_tryrdlock(real_rwlock);
 
 }
 
 static int adapt_pthread_rwlock_timedrdlock(pthread_rwlock_t* restrict rwlock,
     const struct timespec* restrict abs_timeout) {
-    pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    pthread_rwlock_t* real_rwlock = get_or_initialize_real_rwlock(rwlock);
+    assert(real_rwlock);
     return pthread_rwlock_timedrdlock(real_rwlock, abs_timeout);
 }
 
 static int adapt_pthread_rwlock_timedwrlock(pthread_rwlock_t* restrict rwlock,
     const struct timespec* restrict abs_timeout) {
-    pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    pthread_rwlock_t* real_rwlock = get_or_initialize_real_rwlock(rwlock);
+    assert(real_rwlock);
     return pthread_rwlock_timedwrlock(real_rwlock, abs_timeout);
 }
 
