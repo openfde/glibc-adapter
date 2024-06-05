@@ -32,7 +32,15 @@ static struct glibc_adapter_t stdlib_adapters[] = {
     ADAPT_DIRECT(system),
     ADAPT_DIRECT(realpath),
     ADAPT_INDIRECT(__realpath_chk),
-    ADAPT_DIRECT(getenv)
+    ADAPT_DIRECT(getenv),
+    ADAPT_DIRECT(clearenv),
+    ADAPT_DIRECT(setenv),
+    ADAPT_DIRECT(putenv),
+    ADAPT_DIRECT(wctomb),
+
+
+    // ADAPT_TO(__strtod_l, strtod),
+    // ADAPT_TO(__strtof_l, strtof),
 };
 
 void register_adapters_stdlib() { REGISTER_ADAPTERS_BY_CLASS(stdlib); }

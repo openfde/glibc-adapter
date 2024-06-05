@@ -3,6 +3,7 @@
 #include <stdio_ext.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 #include "adapter-register.h"
 
@@ -296,7 +297,7 @@ static void adapt_setbuffer(FILE *fp, char *buf, int size) {
 
 static void adapt_setlinebuf(FILE *fp) { setlinebuf(adapt_stdio_handle(fp)); }
 
-int adapt___isoc99_sscanf(const char* str, const char* format, ...) {
+static int adapt___isoc99_sscanf(const char* str, const char* format, ...) {
   int ret = 0;
   va_list args;
   va_start(args, format);
@@ -304,6 +305,16 @@ int adapt___isoc99_sscanf(const char* str, const char* format, ...) {
   va_end(args);
   return ret;
 }
+
+static int adapt___isoc99_scanf(const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  va_start(args, format);
+  ret = vscanf(format, args);
+  va_end(args);
+  return ret;
+}
+
 
 static int adapt___fprintf_chk(FILE* stream, int flag, const char* format, ...) {
   int ret = 0;
@@ -413,6 +424,30 @@ static size_t adapt_fwrite_unlocked(const void *ptr, size_t size, size_t nmemb,
 }
 #endif
 
+static int adapt_fputws(const wchar_t* ws, FILE* stream) {
+  return fputws(ws, adapt_stdio_handle(stream));
+}
+
+static int adapt_vfwprintf(FILE* stream, const wchar_t* format, va_list args) {
+  return vfwprintf(adapt_stdio_handle(stream), format, args);
+}
+
+static wint_t adapt_fputwc(wchar_t wc, FILE* stream) {
+  return fputwc(wc, adapt_stdio_handle(stream));
+}
+
+static wint_t adapt_putwc(wchar_t wc, FILE* stream) {
+  return putwc(wc, adapt_stdio_handle(stream));
+}
+
+static wint_t adapt_fgetwc(FILE* stream) {
+  return fgetwc(adapt_stdio_handle(stream));
+}
+
+static wint_t adapt_getwc(FILE* stream) {
+  return getwc(adapt_stdio_handle(stream));
+}
+
 static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(_IO_2_1_stdin_),
     ADAPT_INDIRECT(_IO_2_1_stdout_),
@@ -485,6 +520,7 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_DIRECT(sscanf),
     ADAPT_INDIRECT(__isoc99_sscanf),
     ADAPT_INDIRECT(__isoc99_fscanf),
+    ADAPT_INDIRECT(__isoc99_scanf),
 
     ADAPT_INDIRECT(__fprintf_chk),
     ADAPT_INDIRECT(__printf_chk),
@@ -494,6 +530,8 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(__vfprintf_chk),
     ADAPT_INDIRECT(__asprintf_chk),
 
+    ADAPT_DIRECT(__vsnprintf_chk),
+    ADAPT_DIRECT(putchar),
 
     ADAPT_INDIRECT(__getdelim),
 
@@ -507,6 +545,13 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(fwrite_unlocked),
     ADAPT_INDIRECT(fileno_unlocked),
 #endif
+
+    ADAPT_INDIRECT(fputws),
+    ADAPT_INDIRECT(vfwprintf),
+    ADAPT_INDIRECT(fputwc),
+    ADAPT_INDIRECT(putwc),
+    ADAPT_INDIRECT(fgetwc),
+    ADAPT_INDIRECT(getwc),
 };
 
 void register_adapters_stdio() { REGISTER_ADAPTERS_BY_CLASS(stdio); }

@@ -537,6 +537,7 @@ static struct glibc_adapter_t pthread_adapters[] = {
     ADAPT_DIRECT(pthread_setschedparam),
     ADAPT_DIRECT(pthread_once),
     ADAPT_DIRECT(pthread_key_create),
+    ADAPT_TO(__pthread_key_create, pthread_key_create),
     ADAPT_DIRECT(pthread_key_delete),
     ADAPT_DIRECT(pthread_setspecific),
     ADAPT_DIRECT(pthread_getspecific),

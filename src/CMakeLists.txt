@@ -14,6 +14,9 @@ set(ADAPTER_FILES
     malloc-adapter.c
     dirent-adapter.c
     regex-adapter.c
+    locale-adapter.c
+    wchar-adapter.c
+    mman-adapter.c
 
     glibc-adapter.c
 )

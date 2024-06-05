@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <time.h>
 
 #include "adapter-register.h"
 
@@ -39,6 +40,20 @@ static void* adapt_mesa_memset() { return (void*)memset; }
 
 // IFUNC
 static void* adapt_mesa_memcpy() { return (void*)memcpy; }
+
+static void* adapt_rawmemchr(const void* s, int c) {
+  return memchr(s, c, -1);
+}
+
+static void* adapt_mempcpy(void* dest, const void* src, size_t n) {
+  memcpy(dest, src, n);
+  return (char*)dest + n;
+}
+
+extern void* __memcpy_chk(void* dest, const void* src, size_t len, size_t destlen);
+static void* adapt___memcpy_chk(void* dest, const void* src, size_t len, size_t destlen) {
+  return __memcpy_chk(dest, src, len, destlen);
+}
 
 static struct glibc_adapter_t string_adapters[] = {
     /* string.h */
@@ -82,6 +97,16 @@ static struct glibc_adapter_t string_adapters[] = {
     ADAPT_INDIRECT(mesa_memmove),
     ADAPT_INDIRECT(mesa_memset),
     ADAPT_INDIRECT(mesa_memcpy),
+
+    ADAPT_INDIRECT(rawmemchr),
+    ADAPT_INDIRECT(mempcpy),
+    ADAPT_INDIRECT(__memcpy_chk),
+
+    ADAPT_TO(__strcoll_l, strcoll),
+    ADAPT_TO(__strxfrm_l, strxfrm),
+
+    ADAPT_DIRECT(strftime),
+    ADAPT_TO(__strftime_l, strftime),
 
     /* strings.h */
     ADAPT_INDIRECT(index),

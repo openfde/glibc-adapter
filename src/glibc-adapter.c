@@ -66,6 +66,9 @@ static void register_all_adapters() {
   REGISTER_ADAPTERS_BY_CLASSES(stdlib);
   REGISTER_ADAPTERS_BY_CLASSES(dirent);
   REGISTER_ADAPTERS_BY_CLASSES(regex);
+  REGISTER_ADAPTERS_BY_CLASSES(locale);
+  REGISTER_ADAPTERS_BY_CLASSES(wchar);
+  REGISTER_ADAPTERS_BY_CLASSES(mman);
 }
 
 static void sort_adapters() {

@@ -38,15 +38,6 @@ static void *adapt_dlvsym(void *handle, const char *symbol,
   return NULL;
 }
 
-static int adapt_dladdr(void *addr, Dl_info *info) {
-  (void)addr;
-  (void)info;
-  adapter_log("dladdr not supported");
-  errno = ENOTSUP;
-  assert(0);
-  return 0;
-}
-
 static int adapt_dladdr1(void *addr, Dl_info *info, void **extra_info,
                          int flags) {
   (void)addr;
@@ -94,7 +85,7 @@ static int adapt_dl_iterate_phdr(int (*callback)(struct dl_phdr_info *info,
 static struct glibc_adapter_t dlfcn_adapters[] = {
     ADAPT_INDIRECT(dlopen),  ADAPT_INDIRECT(dlerror),
     ADAPT_INDIRECT(dlclose), ADAPT_INDIRECT(dlsym),
-    ADAPT_INDIRECT(dlvsym),  ADAPT_INDIRECT(dladdr),
+    ADAPT_INDIRECT(dlvsym),  ADAPT_DIRECT(dladdr),
     ADAPT_INDIRECT(dladdr1), ADAPT_INDIRECT(dlmopen),
     ADAPT_INDIRECT(dlinfo),  ADAPT_INDIRECT(dl_iterate_phdr),
 };
