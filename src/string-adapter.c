@@ -3,6 +3,8 @@
 #include <string.h>
 #include <strings.h>
 #include <time.h>
+#include <wchar.h>
+#include <inttypes.h>
 
 #include "adapter-register.h"
 
@@ -55,6 +57,8 @@ static void* adapt___memcpy_chk(void* dest, const void* src, size_t len, size_t 
   return __memcpy_chk(dest, src, len, destlen);
 }
 
+extern char* strchrnul(const char* s, int c);
+
 static struct glibc_adapter_t string_adapters[] = {
     /* string.h */
     ADAPT_DIRECT(memccpy),
@@ -100,13 +104,37 @@ static struct glibc_adapter_t string_adapters[] = {
 
     ADAPT_INDIRECT(rawmemchr),
     ADAPT_INDIRECT(mempcpy),
+    ADAPT_TO(__mempcpy, adapt_mempcpy),
     ADAPT_INDIRECT(__memcpy_chk),
 
-    ADAPT_TO(__strcoll_l, strcoll),
-    ADAPT_TO(__strxfrm_l, strxfrm),
+    ADAPT_DIRECT(strcoll),
+    ADAPT_DIRECT(strcoll_l),
+    ADAPT_TO(__strcoll_l, strcoll_l),
+    ADAPT_DIRECT(strxfrm),
+    ADAPT_DIRECT(strxfrm_l),
+    ADAPT_TO(__strxfrm_l, strxfrm_l),
 
     ADAPT_DIRECT(strftime),
-    ADAPT_TO(__strftime_l, strftime),
+    ADAPT_DIRECT(strftime_l),
+    ADAPT_TO(__strftime_l, strftime_l),
+
+    ADAPT_DIRECT(wcsftime),
+    ADAPT_DIRECT(wcsftime_l),
+    ADAPT_TO(__wcsftime_l, wcsftime_l),
+
+    ADAPT_DIRECT(wcscoll),
+    ADAPT_DIRECT(wcscoll_l),
+    ADAPT_TO(__wcscoll_l, wcscoll_l),
+
+    ADAPT_DIRECT(wcsxfrm),
+    ADAPT_DIRECT(wcsxfrm_l),
+    ADAPT_TO(__wcsxfrm_l, wcsxfrm_l),
+
+
+    ADAPT_DIRECT(strtoimax),
+    ADAPT_DIRECT(strtoumax),
+
+    ADAPT_DIRECT(strchrnul),
 
     /* strings.h */
     ADAPT_INDIRECT(index),

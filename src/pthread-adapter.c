@@ -525,6 +525,9 @@ static int adapt_pthread_rwlockattr_setpshared(pthread_rwlockattr_t* attr,
     return pthread_rwlockattr_setpshared(real_attr, pshared);
 }
 
+extern int pthread_setname_np(pthread_t thread, const char* name);
+extern int pthread_getname_np(pthread_t thread, char* name, size_t len);
+
 static struct glibc_adapter_t pthread_adapters[] = {
     ADAPT_INDIRECT(pthread_create),
     ADAPT_DIRECT(pthread_exit),
@@ -541,6 +544,9 @@ static struct glibc_adapter_t pthread_adapters[] = {
     ADAPT_DIRECT(pthread_key_delete),
     ADAPT_DIRECT(pthread_setspecific),
     ADAPT_DIRECT(pthread_getspecific),
+    ADAPT_DIRECT(pthread_getcpuclockid),
+    ADAPT_DIRECT(pthread_getname_np),
+    ADAPT_DIRECT(pthread_setname_np),
 
     // thread attributes
     ADAPT_INDIRECT(pthread_attr_init),

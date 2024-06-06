@@ -17,6 +17,7 @@ set(ADAPTER_FILES
     locale-adapter.c
     wchar-adapter.c
     mman-adapter.c
+    ctype-adapter.c
 
     glibc-adapter.c
 )

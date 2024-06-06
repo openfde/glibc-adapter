@@ -69,6 +69,7 @@ static void register_all_adapters() {
   REGISTER_ADAPTERS_BY_CLASSES(locale);
   REGISTER_ADAPTERS_BY_CLASSES(wchar);
   REGISTER_ADAPTERS_BY_CLASSES(mman);
+  REGISTER_ADAPTERS_BY_CLASSES(ctype);
 }
 
 static void sort_adapters() {

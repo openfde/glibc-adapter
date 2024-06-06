@@ -27,6 +27,8 @@ static struct glibc_adapter_t fcntl_adapters[] = {
     ADAPT_DIRECT(ttyname),
     ADAPT_DIRECT(fmemopen),
     ADAPT_DIRECT(open_memstream),
+
+    ADAPT_DIRECT(isatty),
 };
 
 void register_adapters_fcntl() { REGISTER_ADAPTERS_BY_CLASS(fcntl); }

@@ -552,6 +552,8 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(putwc),
     ADAPT_INDIRECT(fgetwc),
     ADAPT_INDIRECT(getwc),
+
+    ADAPT_DIRECT(perror),
 };
 
 void register_adapters_stdio() { REGISTER_ADAPTERS_BY_CLASS(stdio); }

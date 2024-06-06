@@ -36,6 +36,7 @@ static struct glibc_adapter_t malloc_adapters[] = {
     // malloc.h
     ADAPT_DIRECT(memalign),
     ADAPT_INDIRECT(pvalloc),
+    ADAPT_DIRECT(mallinfo),
 };
 
 void register_adapters_malloc() { REGISTER_ADAPTERS_BY_CLASS(malloc); }
