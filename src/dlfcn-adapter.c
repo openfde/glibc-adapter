@@ -78,8 +78,8 @@ static int adapt_dl_iterate_phdr(int (*callback)(struct dl_phdr_info *info,
   (void)data;
   adapter_log("dl_iterate_phdr not supported");
   errno = ENOTSUP;
-  assert(0);
-  return callback(NULL, 0, data);
+  // assert(0);
+  return 0;
 }
 
 static struct glibc_adapter_t dlfcn_adapters[] = {

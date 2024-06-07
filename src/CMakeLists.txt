@@ -18,6 +18,7 @@ set(ADAPTER_FILES
     wchar-adapter.c
     mman-adapter.c
     ctype-adapter.c
+    sys-adapter.c
 
     glibc-adapter.c
 )

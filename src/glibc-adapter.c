@@ -70,6 +70,7 @@ static void register_all_adapters() {
   REGISTER_ADAPTERS_BY_CLASSES(wchar);
   REGISTER_ADAPTERS_BY_CLASSES(mman);
   REGISTER_ADAPTERS_BY_CLASSES(ctype);
+  REGISTER_ADAPTERS_BY_CLASSES(sys);
 }
 
 static void sort_adapters() {
