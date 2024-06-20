@@ -23,14 +23,13 @@ static int adapt_scandir(const char* dirp, struct dirent*** namelist,
     int (*filter)(const struct dirent*),
     int (*compar)(const struct dirent**,
         const struct dirent**)) {
-    return scandir(dirp, namelist, filter, compar);
-}
-
-static int adapt_scandir64(const char* dirp, struct dirent*** namelist,
-    int (*filter)(const struct dirent*),
-    int (*compar)(const struct dirent**,
-        const struct dirent**)) {
-    return scandir(dirp, namelist, filter, compar);
+    int ret = scandir(dirp, namelist, filter, compar);
+    if (ret >= 0) {
+        adapter_log("scandir %s has %d files\n", dirp, ret);
+    } else {
+        adapter_log("scandir %s errno %d\n", dirp, errno);
+    }
+    return ret;
 }
 
 static int adapt_alphasort(const struct dirent** a, const struct dirent** b) {
@@ -66,7 +65,7 @@ static struct glibc_adapter_t dirent_adapters[] = {
     ADAPT_DIRECT(telldir),
     ADAPT_DIRECT(dirfd),
     ADAPT_INDIRECT(scandir),
-    ADAPT_INDIRECT(scandir64),
+    ADAPT_TO(scandir64, adapt_scandir),
     ADAPT_INDIRECT(alphasort),
     ADAPT_INDIRECT(alphasort64),
     ADAPT_INDIRECT(versionsort),
