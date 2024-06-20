@@ -3,6 +3,22 @@
 
 #include "adapter-register.h"
 
+static int32_t** adapt___ctype_tolower_loc(void) {
+    static int32_t tolower_loc[128 + 256];
+    static int32_t* loc = tolower_loc + 128;
+    for (int ch = -128; ch < 256; ch++) {
+        if (ch >= 'A' && ch <= 'Z') {
+            loc[ch] = ch | 0x20;
+        }
+        else {
+            loc[ch] = ch;
+        }
+    }
+
+    errno = ENOTSUP;
+    adapter_log("__ctype_tolower_loc not support");
+    return &loc;
+}
 
 static struct glibc_adapter_t ctype_adapters[] = {
     ADAPT_DIRECT(isalnum),
@@ -37,6 +53,8 @@ static struct glibc_adapter_t ctype_adapters[] = {
 
     ADAPT_DIRECT(toupper_l),
     ADAPT_DIRECT(tolower_l),
+
+    ADAPT_INDIRECT(__ctype_tolower_loc),
 };
 
 void register_adapters_ctype() { REGISTER_ADAPTERS_BY_CLASS(ctype); }
