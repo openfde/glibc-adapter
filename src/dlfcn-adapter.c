@@ -3,6 +3,7 @@
 #include <errno.h>
 
 #include "adapter-register.h"
+#include "glibc-adapter.h"
 
 static void *adapt_dlopen(const char *filename, int flag) {
   void* handle = dlopen(filename, flag);
@@ -16,8 +17,16 @@ static void *adapt_dlopen(const char *filename, int flag) {
 }
 
 static void *adapt_dlsym(void *handle, const char *symbol) {
-  adapter_log("dlsym handle %p symbol %s", handle, symbol);
-  return dlsym(handle, symbol);
+    void *v = (void *)find_symbol_adapter(symbol);
+    if (v == NULL) {
+        v = dlsym(handle, symbol);
+    }
+    if (v) {
+        adapter_log("dlsym handle %p symbol %s addr %p", handle, symbol, v);
+    } else {
+        adapter_log("dlsym handle %p symbol %s. %s", handle, symbol, dlerror());
+    }
+    return v;
 }
 
 static int adapt_dlclose(void *handle) {
