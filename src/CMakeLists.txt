@@ -12,6 +12,13 @@ set(ADAPTER_FILES
     stdlib-adapter.c
     pthread-adapter.c
     malloc-adapter.c
+    dirent-adapter.c
+    regex-adapter.c
+    locale-adapter.c
+    wchar-adapter.c
+    mman-adapter.c
+    ctype-adapter.c
+    sys-adapter.c
 
     glibc-adapter.c
 )

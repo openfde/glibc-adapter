@@ -3,19 +3,34 @@
 #include <errno.h>
 
 #include "adapter-register.h"
+#include "glibc-adapter.h"
 
 static void *adapt_dlopen(const char *filename, int flag) {
-  adapter_log("filename %s flag %i", filename, flag);
-  return dlopen(filename, flag);
+  void* handle = dlopen(filename, flag);
+  if (handle) {
+    adapter_log("dlopen %s flag 0x%x, handle %p", filename, flag, handle);
+  }
+  else {
+    adapter_log("dlopen %s flag 0x%x. %s", filename, flag, dlerror());
+  }
+  return handle;
 }
 
 static void *adapt_dlsym(void *handle, const char *symbol) {
-  adapter_log("handle %p symbol %s", handle, symbol);
-  return dlsym(handle, symbol);
+    void *v = (void *)find_symbol_adapter(symbol);
+    if (v == NULL) {
+        v = dlsym(handle, symbol);
+    }
+    if (v) {
+        adapter_log("dlsym handle %p symbol %s addr %p", handle, symbol, v);
+    } else {
+        adapter_log("dlsym handle %p symbol %s. %s", handle, symbol, dlerror());
+    }
+    return v;
 }
 
 static int adapt_dlclose(void *handle) {
-  adapter_log("handle %p", handle);
+  adapter_log("dlclose handle %p", handle);
   return dlclose(handle);
 }
 
@@ -30,15 +45,6 @@ static void *adapt_dlvsym(void *handle, const char *symbol,
   errno = ENOTSUP;
   assert(0);
   return NULL;
-}
-
-static int adapt_dladdr(void *addr, Dl_info *info) {
-  (void)addr;
-  (void)info;
-  adapter_log("dladdr not supported");
-  errno = ENOTSUP;
-  assert(0);
-  return 0;
 }
 
 static int adapt_dladdr1(void *addr, Dl_info *info, void **extra_info,
@@ -81,14 +87,14 @@ static int adapt_dl_iterate_phdr(int (*callback)(struct dl_phdr_info *info,
   (void)data;
   adapter_log("dl_iterate_phdr not supported");
   errno = ENOTSUP;
-  assert(0);
-  return callback(NULL, 0, data);
+  // assert(0);
+  return 0;
 }
 
 static struct glibc_adapter_t dlfcn_adapters[] = {
     ADAPT_INDIRECT(dlopen),  ADAPT_INDIRECT(dlerror),
     ADAPT_INDIRECT(dlclose), ADAPT_INDIRECT(dlsym),
-    ADAPT_INDIRECT(dlvsym),  ADAPT_INDIRECT(dladdr),
+    ADAPT_INDIRECT(dlvsym),  ADAPT_DIRECT(dladdr),
     ADAPT_INDIRECT(dladdr1), ADAPT_INDIRECT(dlmopen),
     ADAPT_INDIRECT(dlinfo),  ADAPT_INDIRECT(dl_iterate_phdr),
 };

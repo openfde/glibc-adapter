@@ -8,7 +8,7 @@ set(PROJECTNAME glibc-adapter)
 # build script scope).
 project(glibc-adapter C)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
 
 set(CMAKE_SYSTEM_PROCESSOR arm64)
 

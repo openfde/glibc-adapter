@@ -3,6 +3,7 @@
 #include <stdio_ext.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 #include "adapter-register.h"
 
@@ -37,6 +38,12 @@ static FILE *adapt_stdio_handle(FILE *fp) {
 
 static FILE *adapt_fopen(const char *pathname, const char *mode) {
   FILE *fp = fopen(pathname, mode);
+  adapter_log("fopen filename %s, mode %s, fp %p", pathname, mode, fp);
+  return fp;
+}
+
+static FILE* adapt_fopen64(const char* pathname, const char* mode) {
+  FILE* fp = fopen(pathname, mode);
   adapter_log("fopen filename %s, mode %s, fp %p", pathname, mode, fp);
   return fp;
 }
@@ -120,6 +127,16 @@ static FILE *adapt_freopen(const char *filename, const char *mode, FILE *fp) {
 static FILE *adapt_freopen64(const char *filename, const char *mode, FILE *fp) {
   adapter_log("freopen64 filename '%s' mode '%s' fp %p", filename, mode, fp);
   return freopen64(filename, mode, adapt_stdio_handle(fp));
+}
+
+static int adapt___isoc99_fscanf(FILE* fp, const char* fmt, ...) {
+  int ret = 0;
+  adapter_log("fscanf fp %p fmt '%s'", fp, fmt);
+  va_list args;
+  va_start(args, fmt);
+  ret = vfscanf(adapt_stdio_handle(fp), fmt, args);
+  va_end(args);
+  return ret;
 }
 
 static int adapt_fscanf(FILE *fp, const char *fmt, ...) {
@@ -280,6 +297,92 @@ static void adapt_setbuffer(FILE *fp, char *buf, int size) {
 
 static void adapt_setlinebuf(FILE *fp) { setlinebuf(adapt_stdio_handle(fp)); }
 
+static int adapt___isoc99_sscanf(const char* str, const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  va_start(args, format);
+  ret = vsscanf(str, format, args);
+  va_end(args);
+  return ret;
+}
+
+static int adapt___isoc99_scanf(const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  va_start(args, format);
+  ret = vscanf(format, args);
+  va_end(args);
+  return ret;
+}
+
+
+static int adapt___fprintf_chk(FILE* stream, int flag, const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  (void)flag;
+  va_start(args, format);
+  ret = vfprintf(adapt_stdio_handle(stream), format, args);
+  va_end(args);
+  return ret;
+}
+
+static int adapt___printf_chk(int flag, const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  (void)flag;
+  va_start(args, format);
+  ret = vprintf(format, args);
+  va_end(args);
+  return ret;
+}
+
+extern int __vsnprintf_chk(char*, size_t, int, size_t, const char*, va_list);
+
+static int adapt___snprintf_chk(char* str, size_t maxlen, int flag, size_t strlen, const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  va_start(args, format);
+  ret = __vsnprintf_chk(str, maxlen, flag, strlen, format, args);
+  va_end(args);
+  return ret;
+}
+
+extern int __vsprintf_chk(char* dst, int, size_t dst_len_from_compiler, const char* format, va_list va);
+
+static int adapt___sprintf_chk(char* str, int flag, size_t strlen, const char* format, ...) {
+  int ret = 0;
+  va_list args;
+  va_start(args, format);
+  ret = __vsprintf_chk(str, flag, strlen, format, args);
+  va_end(args);
+  return ret;
+}
+
+static int adapt___vasprintf_chk(char** restrict ptr, int flag, const char* restrict format, va_list arg) {
+  (void)flag;
+  return vasprintf(ptr, format, arg);
+}
+
+static int adapt___vfprintf_chk(FILE* fp, int flag, const char* format, va_list ap) {
+  (void)flag;
+  return vfprintf(adapt_stdio_handle(fp), format, ap);
+}
+
+static ssize_t adapt___getdelim(char** lineptr, size_t* n, int delimiter,
+  FILE* fp) {
+  return getdelim(lineptr, n, delimiter, adapt_stdio_handle(fp));
+}
+
+static int adapt___asprintf_chk(char** restrict ptr, int flag, const char* restrict format, ...) {
+  (void)flag;
+  int ret = 0;
+  va_list args;
+  va_start(args, format);
+  ret = vasprintf(ptr, format, args);
+  va_end(args);
+  return ret;
+}
+
 #if defined(_GNU_SOURCE)
 
 static int adapt_fflush_unlocked(FILE *fp) {
@@ -321,12 +424,37 @@ static size_t adapt_fwrite_unlocked(const void *ptr, size_t size, size_t nmemb,
 }
 #endif
 
+static int adapt_fputws(const wchar_t* ws, FILE* stream) {
+  return fputws(ws, adapt_stdio_handle(stream));
+}
+
+static int adapt_vfwprintf(FILE* stream, const wchar_t* format, va_list args) {
+  return vfwprintf(adapt_stdio_handle(stream), format, args);
+}
+
+static wint_t adapt_fputwc(wchar_t wc, FILE* stream) {
+  return fputwc(wc, adapt_stdio_handle(stream));
+}
+
+static wint_t adapt_putwc(wchar_t wc, FILE* stream) {
+  return putwc(wc, adapt_stdio_handle(stream));
+}
+
+static wint_t adapt_fgetwc(FILE* stream) {
+  return fgetwc(adapt_stdio_handle(stream));
+}
+
+static wint_t adapt_getwc(FILE* stream) {
+  return getwc(adapt_stdio_handle(stream));
+}
+
 static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(_IO_2_1_stdin_),
     ADAPT_INDIRECT(_IO_2_1_stdout_),
     ADAPT_INDIRECT(_IO_2_1_stderr_),
 
     ADAPT_INDIRECT(fopen),
+    ADAPT_INDIRECT(fopen64),
     ADAPT_INDIRECT(fdopen),
     ADAPT_INDIRECT(popen),
     ADAPT_DIRECT(puts),
@@ -389,6 +517,25 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(setbuffer),
     ADAPT_INDIRECT(setlinebuf),
 
+    ADAPT_DIRECT(sscanf),
+    ADAPT_INDIRECT(__isoc99_sscanf),
+    ADAPT_INDIRECT(__isoc99_fscanf),
+    ADAPT_INDIRECT(__isoc99_scanf),
+
+    ADAPT_INDIRECT(__fprintf_chk),
+    ADAPT_INDIRECT(__printf_chk),
+    ADAPT_INDIRECT(__snprintf_chk),
+    ADAPT_INDIRECT(__sprintf_chk),
+    ADAPT_INDIRECT(__vasprintf_chk),
+    ADAPT_INDIRECT(__vfprintf_chk),
+    ADAPT_INDIRECT(__asprintf_chk),
+
+    ADAPT_DIRECT(__vsnprintf_chk),
+    ADAPT_DIRECT(putchar),
+    ADAPT_TO(__asprintf, asprintf),
+
+    ADAPT_INDIRECT(__getdelim),
+
 #if defined(_GNU_SOURCE)
     ADAPT_INDIRECT(fflush_unlocked),
     ADAPT_INDIRECT(fgetc_unlocked),
@@ -399,6 +546,16 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(fwrite_unlocked),
     ADAPT_INDIRECT(fileno_unlocked),
 #endif
+
+    ADAPT_INDIRECT(fputws),
+    ADAPT_INDIRECT(vfwprintf),
+    ADAPT_INDIRECT(fputwc),
+    ADAPT_INDIRECT(putwc),
+    ADAPT_INDIRECT(fgetwc),
+    ADAPT_INDIRECT(getwc),
+
+    ADAPT_DIRECT(perror),
+    ADAPT_DIRECT(vprintf),
 };
 
 void register_adapters_stdio() { REGISTER_ADAPTERS_BY_CLASS(stdio); }
