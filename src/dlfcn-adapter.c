@@ -5,21 +5,26 @@
 #include "adapter-register.h"
 #include "glibc-adapter.h"
 
+extern void *__loader_dlopen(const char *filename, int flags, const void *caller_addr);
 static void *adapt_dlopen(const char *filename, int flag) {
-  void* handle = dlopen(filename, flag);
-  if (handle) {
-    adapter_log("dlopen %s flag 0x%x, handle %p", filename, flag, handle);
-  }
-  else {
-    adapter_log("dlopen %s flag 0x%x. %s", filename, flag, dlerror());
-  }
-  return handle;
+    // use caller's namespace instead of adpater
+    // caller is a gnu library, but adapter is a bionic libraray.
+    const void *caller_addr = __builtin_return_address(0);
+    void *handle = __loader_dlopen(filename, flag, caller_addr);
+    if (handle) {
+        adapter_log("dlopen %s flag 0x%x, handle %p", filename, flag, handle);
+    } else {
+        adapter_log("dlopen %s flag 0x%x. %s", filename, flag, dlerror());
+    }
+    return handle;
 }
 
+extern void *__loader_dlsym(void *handle, const char *symbol, const void *caller_addr);
 static void *adapt_dlsym(void *handle, const char *symbol) {
     void *v = (void *)find_symbol_adapter(symbol);
     if (v == NULL) {
-        v = dlsym(handle, symbol);
+        const void *caller_addr = __builtin_return_address(0);
+        v = __loader_dlsym(handle, symbol, caller_addr);
     }
     if (v) {
         adapter_log("dlsym handle %p symbol %s addr %p", handle, symbol, v);
