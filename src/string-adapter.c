@@ -9,19 +9,19 @@
 #include "adapter-register.h"
 
 char* adapt_index(const char* s, int c) {
-    (void)s;
-    (void)c;
-    errno = ENOTSUP;
-    adapter_log("Not support index");
-    return NULL;
+  (void)s;
+  (void)c;
+  errno = ENOTSUP;
+  adapter_log("Not support index");
+  return NULL;
 }
 
 char* adapt_rindex(const char* s, int c) {
-    (void)s;
-    (void)c;
-    errno = ENOTSUP;
-    adapter_log("Not support rindex");
-    return NULL;
+  (void)s;
+  (void)c;
+  errno = ENOTSUP;
+  adapter_log("Not support rindex");
+  return NULL;
 }
 
 static int adapt_bcmp(const void* s1, const void* s2, size_t n) { return memcmp(s1, s2, n); }
@@ -31,18 +31,18 @@ static void adapt_bcopy(const void* src, void* dest, size_t n) { memcpy(dest, sr
 static void adapt_bzero(void* s, size_t n) { memset(s, 0, n); }
 
 static void* adapt_mesa_memmove(void* dest, const void* src, size_t n) {
-    adapter_log("mesa_memmove(%p, %p, %lu)\n", dest, src, n);
-    return memmove(dest, src, n);
+  adapter_logv("mesa_memmove(%p, %p, %lu)\n", dest, src, n);
+  return memmove(dest, src, n);
 }
 
 static void* adapt_mesa_memset(void* s, int c, size_t n) {
-    adapter_log("mesa_memset(%p, %i, %lu)\n", s, c, n);
-    return memset(s, c, n);
+  adapter_logv("mesa_memset(%p, %i, %lu)\n", s, c, n);
+  return memset(s, c, n);
 }
 
 static void* adapt_mesa_memcpy(void* dest, const void* src, size_t n) {
-    adapter_log("mesa_memcpy(%p, %p, %lu)\n", dest, src, n);
-    return memcpy(dest, src, n);
+  adapter_logv("mesa_memcpy(%p, %p, %lu)\n", dest, src, n);
+  return memcpy(dest, src, n);
 }
 
 static void* adapt_rawmemchr(const void* s, int c) { return memchr(s, c, -1); }
@@ -54,12 +54,12 @@ static void* adapt_mempcpy(void* dest, const void* src, size_t n) {
 
 extern void* __memcpy_chk(void* dest, const void* src, size_t len, size_t destlen);
 static void* adapt___memcpy_chk(void* dest, const void* src, size_t len, size_t destlen) {
-    return __memcpy_chk(dest, src, len, destlen);
+  return __memcpy_chk(dest, src, len, destlen);
 }
 
 extern char* __strcpy_chk(char* dest, const char* src, size_t destlen);
 static char* adapt___strcpy_chk(char* dest, const char* src, size_t destlen) {
-    return __strcpy_chk(dest, src, destlen);
+  return __strcpy_chk(dest, src, destlen);
 }
 
 extern char* strchrnul(const char* s, int c);

@@ -1,7 +1,10 @@
 #pragma once
 #include <stdlib.h>
 
+// debug level
 int adapter_log(const char* format, ...);
+// verbose level
+int adapter_logv(const char* format, ...);
 
 struct glibc_adapter_t {
   const char* symbol;

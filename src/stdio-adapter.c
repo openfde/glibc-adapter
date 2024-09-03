@@ -38,32 +38,32 @@ static FILE *adapt_stdio_handle(FILE *fp) {
 
 static FILE *adapt_fopen(const char *pathname, const char *mode) {
   FILE *fp = fopen(pathname, mode);
-  adapter_log("fopen filename %s, mode %s, fp %p", pathname, mode, fp);
+  adapter_logv("fopen filename %s, mode %s, fp %p", pathname, mode, fp);
   return fp;
 }
 
-static FILE* adapt_fopen64(const char* pathname, const char* mode) {
-  FILE* fp = fopen(pathname, mode);
-  adapter_log("fopen filename %s, mode %s, fp %p", pathname, mode, fp);
+static FILE *adapt_fopen64(const char *pathname, const char *mode) {
+  FILE *fp = fopen(pathname, mode);
+  adapter_logv("fopen filename %s, mode %s, fp %p", pathname, mode, fp);
   return fp;
 }
 
 static FILE *adapt_fdopen(int fd, const char *mode) {
   FILE *fp = fdopen(fd, mode);
-  adapter_log("fdopen fd %d, mode %s, fp %p", fd, mode, fp);
+  adapter_logv("fdopen fd %d, mode %s, fp %p", fd, mode, fp);
   return fp;
 }
 
 static FILE *adapt_popen(const char *command, const char *type) {
   FILE *fp = popen(command, type);
-  adapter_log("fopen command %s, type %s, fp %p", command, type, fp);
+  adapter_logv("fopen command %s, type %s, fp %p", command, type, fp);
   return fp;
 }
 
 static void adapt_clearerr(FILE *fp) { clearerr(adapt_stdio_handle(fp)); }
 
 static int adapt_fclose(FILE *fp) {
-  adapter_log("fclose fp %p", fp);
+  adapter_logv("fclose fp %p", fp);
   return fclose(adapt_stdio_handle(fp));
 }
 
@@ -72,7 +72,7 @@ static int adapt_feof(FILE *fp) { return feof(adapt_stdio_handle(fp)); }
 static int adapt_ferror(FILE *fp) { return ferror(adapt_stdio_handle(fp)); }
 
 static int adapt_fflush(FILE *fp) {
-  adapter_log("fflush fp %p", fp);
+  adapter_logv("fflush fp %p", fp);
   if (fileno(adapt_stdio_handle(fp)) < 0) {
     return 0;
   }
@@ -82,17 +82,17 @@ static int adapt_fflush(FILE *fp) {
 static int adapt_fgetc(FILE *fp) { return fgetc(adapt_stdio_handle(fp)); }
 
 static int adapt_fgetpos(FILE *fp, fpos_t *pos) {
-  adapter_log("fgetpos fp %p pos %p", fp, pos);
+  adapter_logv("fgetpos fp %p pos %p", fp, pos);
   return fgetpos(adapt_stdio_handle(fp), pos);
 }
 
 static int adapt_fgetpos64(FILE *fp, fpos64_t *pos) {
-  adapter_log("fgetpos64 fp %p pos %p", fp, pos);
+  adapter_logv("fgetpos64 fp %p pos %p", fp, pos);
   return fgetpos64(adapt_stdio_handle(fp), pos);
 }
 
 static char *adapt_fgets(char *s, int n, FILE *fp) {
-  adapter_log("fgets s %s n %d fp %p", s, n, fp);
+  adapter_logv("fgets s %s n %d fp %p", s, n, fp);
   return fgets(s, n, adapt_stdio_handle(fp));
 }
 
@@ -105,33 +105,31 @@ static int adapt_fprintf(FILE *fp, const char *fmt, ...) {
   return ret;
 }
 
-static int adapt_fputc(int c, FILE *fp) {
-  return fputc(c, adapt_stdio_handle(fp));
-}
+static int adapt_fputc(int c, FILE *fp) { return fputc(c, adapt_stdio_handle(fp)); }
 
 static int adapt_fputs(const char *s, FILE *fp) {
-  adapter_log("fputs s '%s' fp %p", s, fp);
+  adapter_logv("fputs s '%s' fp %p", s, fp);
   return fputs(s, adapt_stdio_handle(fp));
 }
 
 static size_t adapt_fread(void *ptr, size_t size, size_t nmemb, FILE *fp) {
-  adapter_log("fread ptr %p size %zu nmemb %zu fp %p", ptr, size, nmemb, fp);
+  adapter_logv("fread ptr %p size %zu nmemb %zu fp %p", ptr, size, nmemb, fp);
   return fread(ptr, size, nmemb, adapt_stdio_handle(fp));
 }
 
 static FILE *adapt_freopen(const char *filename, const char *mode, FILE *fp) {
-  adapter_log("freopen filename '%s' mode '%s' fp %p", filename, mode, fp);
+  adapter_logv("freopen filename '%s' mode '%s' fp %p", filename, mode, fp);
   return freopen(filename, mode, adapt_stdio_handle(fp));
 }
 
 static FILE *adapt_freopen64(const char *filename, const char *mode, FILE *fp) {
-  adapter_log("freopen64 filename '%s' mode '%s' fp %p", filename, mode, fp);
+  adapter_logv("freopen64 filename '%s' mode '%s' fp %p", filename, mode, fp);
   return freopen64(filename, mode, adapt_stdio_handle(fp));
 }
 
-static int adapt___isoc99_fscanf(FILE* fp, const char* fmt, ...) {
+static int adapt___isoc99_fscanf(FILE *fp, const char *fmt, ...) {
   int ret = 0;
-  adapter_log("fscanf fp %p fmt '%s'", fp, fmt);
+  adapter_logv("fscanf fp %p fmt '%s'", fp, fmt);
   va_list args;
   va_start(args, fmt);
   ret = vfscanf(adapt_stdio_handle(fp), fmt, args);
@@ -141,7 +139,7 @@ static int adapt___isoc99_fscanf(FILE* fp, const char* fmt, ...) {
 
 static int adapt_fscanf(FILE *fp, const char *fmt, ...) {
   int ret = 0;
-  adapter_log("fscanf fp %p fmt '%s'", fp, fmt);
+  adapter_logv("fscanf fp %p fmt '%s'", fp, fmt);
   va_list args;
   va_start(args, fmt);
   ret = vfscanf(adapt_stdio_handle(fp), fmt, args);
@@ -150,27 +148,27 @@ static int adapt_fscanf(FILE *fp, const char *fmt, ...) {
 }
 
 static int adapt_fseek(FILE *fp, long offset, int whence) {
-  adapter_log("fseek fp %p offset %ld whence %d", fp, offset, whence);
+  adapter_logv("fseek fp %p offset %ld whence %d", fp, offset, whence);
   return fseek(adapt_stdio_handle(fp), offset, whence);
 }
 
 static int adapt_fseeko(FILE *fp, off_t offset, int whence) {
-  adapter_log("fseeko fp %p offset %ld whence %d", fp, offset, whence);
+  adapter_logv("fseeko fp %p offset %ld whence %d", fp, offset, whence);
   return fseeko(adapt_stdio_handle(fp), offset, whence);
 }
 
 static int adapt_fseeko64(FILE *fp, off64_t offset, int whence) {
-  adapter_log("fseeko64 fp %p offset %ld whence %d", fp, offset, whence);
+  adapter_logv("fseeko64 fp %p offset %ld whence %d", fp, offset, whence);
   return fseeko64(adapt_stdio_handle(fp), offset, whence);
 }
 
 static int adapt_fsetpos(FILE *fp, const fpos_t *pos) {
-  adapter_log("fsetpos fp %p pos %p", fp, pos);
+  adapter_logv("fsetpos fp %p pos %p", fp, pos);
   return fsetpos(adapt_stdio_handle(fp), pos);
 }
 
 static int adapt_fsetpos64(FILE *fp, const fpos64_t *pos) {
-  adapter_log("fsetpos64 fp %p pos %p", fp, pos);
+  adapter_logv("fsetpos64 fp %p pos %p", fp, pos);
   return fsetpos64(adapt_stdio_handle(fp), pos);
 }
 
@@ -178,20 +176,16 @@ static long adapt_ftell(FILE *fp) { return ftell(adapt_stdio_handle(fp)); }
 
 static off_t adapt_ftello(FILE *fp) { return ftello(adapt_stdio_handle(fp)); }
 
-static off_t adapt_ftello64(FILE *fp) {
-  return ftello64(adapt_stdio_handle(fp));
-}
+static off_t adapt_ftello64(FILE *fp) { return ftello64(adapt_stdio_handle(fp)); }
 
-static size_t adapt_fwrite(const void *ptr, size_t size, size_t nmemb,
-                           FILE *fp) {
-  adapter_log("fwrite ptr %p size %zu nmemb %zu fp %p", ptr, size, nmemb, fp);
+static size_t adapt_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *fp) {
+  adapter_logv("fwrite ptr %p size %zu nmemb %zu fp %p", ptr, size, nmemb, fp);
   return fwrite(ptr, size, nmemb, adapt_stdio_handle(fp));
 }
 
 static int adapt_getc(FILE *fp) { return getc(adapt_stdio_handle(fp)); }
 
-static ssize_t adapt_getdelim(char **lineptr, size_t *n, int delimiter,
-                              FILE *fp) {
+static ssize_t adapt_getdelim(char **lineptr, size_t *n, int delimiter, FILE *fp) {
   return getdelim(lineptr, n, delimiter, adapt_stdio_handle(fp));
 }
 
@@ -199,82 +193,64 @@ static ssize_t adapt_getline(char **lineptr, size_t *n, FILE *fp) {
   return getline(lineptr, n, adapt_stdio_handle(fp));
 }
 
-static int adapt_putc(int c, FILE *fp) {
-  return putc(c, adapt_stdio_handle(fp));
-}
+static int adapt_putc(int c, FILE *fp) { return putc(c, adapt_stdio_handle(fp)); }
 
 static void adapt_rewind(FILE *fp) {
-  adapter_log("rewind fp %p", fp);
+  adapter_logv("rewind fp %p", fp);
   rewind(adapt_stdio_handle(fp));
 }
 
-static void adapt_setbuf(FILE *fp, char *buf) {
-  setbuf(adapt_stdio_handle(fp), buf);
-}
+static void adapt_setbuf(FILE *fp, char *buf) { setbuf(adapt_stdio_handle(fp), buf); }
 
 static int adapt_setvbuf(FILE *fp, char *buf, int mode, size_t size) {
   return setvbuf(adapt_stdio_handle(fp), buf, mode, size);
 }
 
-static int adapt_ungetc(int c, FILE *fp) {
-  return ungetc(c, adapt_stdio_handle(fp));
-}
+static int adapt_ungetc(int c, FILE *fp) { return ungetc(c, adapt_stdio_handle(fp)); }
 
 static int adapt_vfprintf(FILE *fp, const char *fmt, va_list arg) {
-  adapter_log("vfprintf fp %p fmt '%s'", fp, fmt);
+  adapter_logv("vfprintf fp %p fmt '%s'", fp, fmt);
   return vfprintf(adapt_stdio_handle(fp), fmt, arg);
 }
 
 static int adapt_vfscanf(FILE *fp, const char *fmt, va_list arg) {
-  adapter_log("vfscanf fp %p fmt '%s'", fp, fmt);
+  adapter_logv("vfscanf fp %p fmt '%s'", fp, fmt);
   return vfscanf(adapt_stdio_handle(fp), fmt, arg);
 }
 
 static int adapt_fileno(FILE *fp) { return fileno(adapt_stdio_handle(fp)); }
 
 static int adapt_pclose(FILE *fp) {
-  adapter_log("pclose fp %p", fp);
+  adapter_logv("pclose fp %p", fp);
   return pclose(adapt_stdio_handle(fp));
 }
 
 static void adapt_flockfile(FILE *fp) {
-  adapter_log("flockfile fp %p", fp);
+  adapter_logv("flockfile fp %p", fp);
   flockfile(adapt_stdio_handle(fp));
 }
 
 static int adapt_ftrylockfile(FILE *fp) {
-  adapter_log("ftrylockfile fp %p", fp);
+  adapter_logv("ftrylockfile fp %p", fp);
   return ftrylockfile(adapt_stdio_handle(fp));
 }
 
 static void adapt_funlockfile(FILE *fp) {
-  adapter_log("funlockfile fp %p", fp);
+  adapter_logv("funlockfile fp %p", fp);
   funlockfile(adapt_stdio_handle(fp));
 }
 
-static void adapt_clearerr_unlocked(FILE *fp) {
-  clearerr_unlocked(adapt_stdio_handle(fp));
-}
+static void adapt_clearerr_unlocked(FILE *fp) { clearerr_unlocked(adapt_stdio_handle(fp)); }
 
-static int adapt_feof_unlocked(FILE *fp) {
-  return feof_unlocked(adapt_stdio_handle(fp));
-}
+static int adapt_feof_unlocked(FILE *fp) { return feof_unlocked(adapt_stdio_handle(fp)); }
 
-static int adapt_ferror_unlocked(FILE *fp) {
-  return ferror_unlocked(adapt_stdio_handle(fp));
-}
+static int adapt_ferror_unlocked(FILE *fp) { return ferror_unlocked(adapt_stdio_handle(fp)); }
 
-static int adapt_getc_unlocked(FILE *fp) {
-  return getc_unlocked(adapt_stdio_handle(fp));
-}
+static int adapt_getc_unlocked(FILE *fp) { return getc_unlocked(adapt_stdio_handle(fp)); }
 
-static int adapt_putc_unlocked(int c, FILE *fp) {
-  return putc_unlocked(c, adapt_stdio_handle(fp));
-}
+static int adapt_putc_unlocked(int c, FILE *fp) { return putc_unlocked(c, adapt_stdio_handle(fp)); }
 
-static char *adapt_fgetln(FILE *fp, size_t *len) {
-  return fgetln(adapt_stdio_handle(fp), len);
-}
+static char *adapt_fgetln(FILE *fp, size_t *len) { return fgetln(adapt_stdio_handle(fp), len); }
 
 static void adapt___fpurge(FILE *fp) { __fpurge(adapt_stdio_handle(fp)); }
 
@@ -297,7 +273,7 @@ static void adapt_setbuffer(FILE *fp, char *buf, int size) {
 
 static void adapt_setlinebuf(FILE *fp) { setlinebuf(adapt_stdio_handle(fp)); }
 
-static int adapt___isoc99_sscanf(const char* str, const char* format, ...) {
+static int adapt___isoc99_sscanf(const char *str, const char *format, ...) {
   int ret = 0;
   va_list args;
   va_start(args, format);
@@ -306,7 +282,7 @@ static int adapt___isoc99_sscanf(const char* str, const char* format, ...) {
   return ret;
 }
 
-static int adapt___isoc99_scanf(const char* format, ...) {
+static int adapt___isoc99_scanf(const char *format, ...) {
   int ret = 0;
   va_list args;
   va_start(args, format);
@@ -315,8 +291,7 @@ static int adapt___isoc99_scanf(const char* format, ...) {
   return ret;
 }
 
-
-static int adapt___fprintf_chk(FILE* stream, int flag, const char* format, ...) {
+static int adapt___fprintf_chk(FILE *stream, int flag, const char *format, ...) {
   int ret = 0;
   va_list args;
   (void)flag;
@@ -326,7 +301,7 @@ static int adapt___fprintf_chk(FILE* stream, int flag, const char* format, ...) 
   return ret;
 }
 
-static int adapt___printf_chk(int flag, const char* format, ...) {
+static int adapt___printf_chk(int flag, const char *format, ...) {
   int ret = 0;
   va_list args;
   (void)flag;
@@ -336,9 +311,10 @@ static int adapt___printf_chk(int flag, const char* format, ...) {
   return ret;
 }
 
-extern int __vsnprintf_chk(char*, size_t, int, size_t, const char*, va_list);
+extern int __vsnprintf_chk(char *, size_t, int, size_t, const char *, va_list);
 
-static int adapt___snprintf_chk(char* str, size_t maxlen, int flag, size_t strlen, const char* format, ...) {
+static int adapt___snprintf_chk(char *str, size_t maxlen, int flag, size_t strlen,
+                                const char *format, ...) {
   int ret = 0;
   va_list args;
   va_start(args, format);
@@ -347,9 +323,10 @@ static int adapt___snprintf_chk(char* str, size_t maxlen, int flag, size_t strle
   return ret;
 }
 
-extern int __vsprintf_chk(char* dst, int, size_t dst_len_from_compiler, const char* format, va_list va);
+extern int __vsprintf_chk(char *dst, int, size_t dst_len_from_compiler, const char *format,
+                          va_list va);
 
-static int adapt___sprintf_chk(char* str, int flag, size_t strlen, const char* format, ...) {
+static int adapt___sprintf_chk(char *str, int flag, size_t strlen, const char *format, ...) {
   int ret = 0;
   va_list args;
   va_start(args, format);
@@ -358,22 +335,22 @@ static int adapt___sprintf_chk(char* str, int flag, size_t strlen, const char* f
   return ret;
 }
 
-static int adapt___vasprintf_chk(char** restrict ptr, int flag, const char* restrict format, va_list arg) {
+static int adapt___vasprintf_chk(char **restrict ptr, int flag, const char *restrict format,
+                                 va_list arg) {
   (void)flag;
   return vasprintf(ptr, format, arg);
 }
 
-static int adapt___vfprintf_chk(FILE* fp, int flag, const char* format, va_list ap) {
+static int adapt___vfprintf_chk(FILE *fp, int flag, const char *format, va_list ap) {
   (void)flag;
   return vfprintf(adapt_stdio_handle(fp), format, ap);
 }
 
-static ssize_t adapt___getdelim(char** lineptr, size_t* n, int delimiter,
-  FILE* fp) {
+static ssize_t adapt___getdelim(char **lineptr, size_t *n, int delimiter, FILE *fp) {
   return getdelim(lineptr, n, delimiter, adapt_stdio_handle(fp));
 }
 
-static int adapt___asprintf_chk(char** restrict ptr, int flag, const char* restrict format, ...) {
+static int adapt___asprintf_chk(char **restrict ptr, int flag, const char *restrict format, ...) {
   (void)flag;
   int ret = 0;
   va_list args;
@@ -386,20 +363,16 @@ static int adapt___asprintf_chk(char** restrict ptr, int flag, const char* restr
 #if defined(_GNU_SOURCE)
 
 static int adapt_fflush_unlocked(FILE *fp) {
-  adapter_log("fflush_unlocked fp %p", fp);
+  adapter_logv("fflush_unlocked fp %p", fp);
   if (fileno_unlocked(adapt_stdio_handle(fp)) < 0) {
     return 0;
   }
   return fflush_unlocked(adapt_stdio_handle(fp));
 }
 
-static int adapt_fileno_unlocked(FILE *fp) {
-  return fileno_unlocked(adapt_stdio_handle(fp));
-}
+static int adapt_fileno_unlocked(FILE *fp) { return fileno_unlocked(adapt_stdio_handle(fp)); }
 
-static int adapt_fgetc_unlocked(FILE *fp) {
-  return fgetc_unlocked(adapt_stdio_handle(fp));
-}
+static int adapt_fgetc_unlocked(FILE *fp) { return fgetc_unlocked(adapt_stdio_handle(fp)); }
 
 static char *adapt_fgets_unlocked(char *s, int n, FILE *fp) {
   return fgets_unlocked(s, n, adapt_stdio_handle(fp));
@@ -413,40 +386,34 @@ static int adapt_fputs_unlocked(const char *s, FILE *fp) {
   return fputs_unlocked(s, adapt_stdio_handle(fp));
 }
 
-static size_t adapt_fread_unlocked(void *ptr, size_t size, size_t nmemb,
-                                   FILE *fp) {
+static size_t adapt_fread_unlocked(void *ptr, size_t size, size_t nmemb, FILE *fp) {
   return fread_unlocked(ptr, size, nmemb, adapt_stdio_handle(fp));
 }
 
-static size_t adapt_fwrite_unlocked(const void *ptr, size_t size, size_t nmemb,
-                                    FILE *fp) {
+static size_t adapt_fwrite_unlocked(const void *ptr, size_t size, size_t nmemb, FILE *fp) {
   return fwrite_unlocked(ptr, size, nmemb, adapt_stdio_handle(fp));
 }
 #endif
 
-static int adapt_fputws(const wchar_t* ws, FILE* stream) {
+static int adapt_fputws(const wchar_t *ws, FILE *stream) {
   return fputws(ws, adapt_stdio_handle(stream));
 }
 
-static int adapt_vfwprintf(FILE* stream, const wchar_t* format, va_list args) {
+static int adapt_vfwprintf(FILE *stream, const wchar_t *format, va_list args) {
   return vfwprintf(adapt_stdio_handle(stream), format, args);
 }
 
-static wint_t adapt_fputwc(wchar_t wc, FILE* stream) {
+static wint_t adapt_fputwc(wchar_t wc, FILE *stream) {
   return fputwc(wc, adapt_stdio_handle(stream));
 }
 
-static wint_t adapt_putwc(wchar_t wc, FILE* stream) {
+static wint_t adapt_putwc(wchar_t wc, FILE *stream) {
   return putwc(wc, adapt_stdio_handle(stream));
 }
 
-static wint_t adapt_fgetwc(FILE* stream) {
-  return fgetwc(adapt_stdio_handle(stream));
-}
+static wint_t adapt_fgetwc(FILE *stream) { return fgetwc(adapt_stdio_handle(stream)); }
 
-static wint_t adapt_getwc(FILE* stream) {
-  return getwc(adapt_stdio_handle(stream));
-}
+static wint_t adapt_getwc(FILE *stream) { return getwc(adapt_stdio_handle(stream)); }
 
 static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(_IO_2_1_stdin_),

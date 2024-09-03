@@ -9,7 +9,7 @@
 
 static int adapt_open(const char *pathname, int flags, mode_t mode) {
   int fd = open(pathname, flags, mode);
-  adapter_log("file : %s, fd : %d, errno : %d", pathname, fd, errno);
+  adapter_logv("file : %s, fd : %d, errno : %d", pathname, fd, errno);
   return fd;
 }
 

@@ -7,42 +7,41 @@
 
 extern void *__loader_dlopen(const char *filename, int flags, const void *caller_addr);
 static void *adapt_dlopen(const char *filename, int flag) {
-    // use caller's namespace instead of adpater
-    // caller is a gnu library, but adapter is a bionic libraray.
-    const void *caller_addr = __builtin_return_address(0);
-    void *handle = __loader_dlopen(filename, flag, caller_addr);
-    if (handle) {
-        adapter_log("dlopen %s flag 0x%x, handle %p", filename, flag, handle);
-    } else {
-        adapter_log("dlopen %s flag 0x%x. %s", filename, flag, dlerror());
-    }
-    return handle;
+  // use caller's namespace instead of adpater
+  // caller is a gnu library, but adapter is a bionic libraray.
+  const void *caller_addr = __builtin_return_address(0);
+  void *handle = __loader_dlopen(filename, flag, caller_addr);
+  if (handle) {
+    adapter_logv("dlopen %s flag 0x%x, handle %p", filename, flag, handle);
+  } else {
+    adapter_log("dlopen %s flag 0x%x. %s", filename, flag, dlerror());
+  }
+  return handle;
 }
 
 extern void *__loader_dlsym(void *handle, const char *symbol, const void *caller_addr);
 static void *adapt_dlsym(void *handle, const char *symbol) {
-    void *v = (void *)find_symbol_adapter(symbol);
-    if (v == NULL) {
-        const void *caller_addr = __builtin_return_address(0);
-        v = __loader_dlsym(handle, symbol, caller_addr);
-    }
-    if (v) {
-        adapter_log("dlsym handle %p symbol %s addr %p", handle, symbol, v);
-    } else {
-        adapter_log("dlsym handle %p symbol %s. %s", handle, symbol, dlerror());
-    }
-    return v;
+  void *v = (void *)find_symbol_adapter(symbol);
+  if (v == NULL) {
+    const void *caller_addr = __builtin_return_address(0);
+    v = __loader_dlsym(handle, symbol, caller_addr);
+  }
+  if (v) {
+    adapter_logv("dlsym handle %p symbol %s addr %p", handle, symbol, v);
+  } else {
+    adapter_log("dlsym handle %p symbol %s. %s", handle, symbol, dlerror());
+  }
+  return v;
 }
 
 static int adapt_dlclose(void *handle) {
-  adapter_log("dlclose handle %p", handle);
+  adapter_logv("dlclose handle %p", handle);
   return dlclose(handle);
 }
 
 static const char *adapt_dlerror(void) { return dlerror(); }
 
-static void *adapt_dlvsym(void *handle, const char *symbol,
-                          const char *version) {
+static void *adapt_dlvsym(void *handle, const char *symbol, const char *version) {
   (void)handle;
   (void)symbol;
   (void)version;
@@ -52,8 +51,7 @@ static void *adapt_dlvsym(void *handle, const char *symbol,
   return NULL;
 }
 
-static int adapt_dladdr1(void *addr, Dl_info *info, void **extra_info,
-                         int flags) {
+static int adapt_dladdr1(void *addr, Dl_info *info, void **extra_info, int flags) {
   (void)addr;
   (void)info;
   (void)extra_info;
@@ -85,8 +83,8 @@ static int adapt_dlinfo(void *handle, int request, void *info) {
 }
 
 struct dl_phdr_info;
-static int adapt_dl_iterate_phdr(int (*callback)(struct dl_phdr_info *info,
-                                                 size_t size, void *data),
+static int adapt_dl_iterate_phdr(int (*callback)(struct dl_phdr_info *info, size_t size,
+                                                 void *data),
                                  void *data) {
   (void)callback;
   (void)data;
@@ -97,11 +95,10 @@ static int adapt_dl_iterate_phdr(int (*callback)(struct dl_phdr_info *info,
 }
 
 static struct glibc_adapter_t dlfcn_adapters[] = {
-    ADAPT_INDIRECT(dlopen),  ADAPT_INDIRECT(dlerror),
-    ADAPT_INDIRECT(dlclose), ADAPT_INDIRECT(dlsym),
-    ADAPT_INDIRECT(dlvsym),  ADAPT_DIRECT(dladdr),
-    ADAPT_INDIRECT(dladdr1), ADAPT_INDIRECT(dlmopen),
-    ADAPT_INDIRECT(dlinfo),  ADAPT_INDIRECT(dl_iterate_phdr),
+    ADAPT_INDIRECT(dlopen),          ADAPT_INDIRECT(dlerror), ADAPT_INDIRECT(dlclose),
+    ADAPT_INDIRECT(dlsym),           ADAPT_INDIRECT(dlvsym),  ADAPT_DIRECT(dladdr),
+    ADAPT_INDIRECT(dladdr1),         ADAPT_INDIRECT(dlmopen), ADAPT_INDIRECT(dlinfo),
+    ADAPT_INDIRECT(dl_iterate_phdr),
 };
 
 void register_adapters_dlfcn() { REGISTER_ADAPTERS_BY_CLASS(dlfcn); }

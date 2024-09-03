@@ -1,12 +1,11 @@
 #include "glibc-adapter.h"
-#include "adapter-register.h"
 
 #include <android/log.h>
-
 #include <string.h>
 
-extern const void *find_symbol_adapter(const char *sym)
-    __attribute__((visibility("default")));
+#include "adapter-register.h"
+
+extern const void *find_symbol_adapter(const char *sym) __attribute__((visibility("default")));
 
 int adapter_log(const char *fmt, ...) {
   int ret = 0;
@@ -17,16 +16,22 @@ int adapter_log(const char *fmt, ...) {
   return ret;
 }
 
+int adapter_logv(const char *fmt, ...) {
+  int ret = 0;
+  va_list args;
+  va_start(args, fmt);
+  ret = __android_log_vprint(ANDROID_LOG_VERBOSE, "glibc-adapter", fmt, args);
+  va_end(args);
+  return ret;
+}
+
 // do not use malloc to allocate memory when dyname linker loading.
 static struct glibc_adapter_t all_adapters[8192];
-static const size_t adapters_storage_max_size =
-    sizeof(all_adapters) / sizeof(all_adapters[0]);
+static const size_t adapters_storage_max_size = sizeof(all_adapters) / sizeof(all_adapters[0]);
 static size_t all_adapters_count = 0;
 
-int register_adapters(const char *classes,
-                      const struct glibc_adapter_t *adapters,
+int register_adapters(const char *classes, const struct glibc_adapter_t *adapters,
                       size_t adapter_count) {
-
   if (adapter_count == 0 || !classes) {
     return 0;
   }
@@ -40,19 +45,18 @@ int register_adapters(const char *classes,
     all_adapters[all_adapters_count] = adapters[idx];
   }
 
-  adapter_log("Added %d symbols for %s adapters", adapter_count, classes);
+  adapter_logv("Added %d symbols for %s adapters", adapter_count, classes);
   return 1;
 }
 
 static int inited = 0;
 
 static int adapter_cmp(const void *a, const void *b) {
-  return strcmp(((struct glibc_adapter_t *)a)->symbol,
-                ((struct glibc_adapter_t *)b)->symbol);
+  return strcmp(((struct glibc_adapter_t *)a)->symbol, ((struct glibc_adapter_t *)b)->symbol);
 }
 
-#define REGISTER_ADAPTERS_BY_CLASSES(classes)                                  \
-  extern void register_adapters_##classes();                                   \
+#define REGISTER_ADAPTERS_BY_CLASSES(classes) \
+  extern void register_adapters_##classes();  \
   register_adapters_##classes()
 
 static void register_all_adapters() {
@@ -87,11 +91,11 @@ const void *find_symbol_adapter(const char *sym) {
     inited = 1;
   }
 
-  void *found = bsearch(&key, all_adapters, all_adapters_count,
-                        sizeof(*all_adapters), adapter_cmp);
+  void *found = bsearch(&key, all_adapters, all_adapters_count, sizeof(*all_adapters), adapter_cmp);
 
   if (found) {
     return ((struct glibc_adapter_t *)found)->adapt_fun;
   }
+  adapter_logv("Not found %s", sym);
   return NULL;
 }
