@@ -41,14 +41,22 @@ static int adapt_dlclose(void *handle) {
 
 static const char *adapt_dlerror(void) { return dlerror(); }
 
+extern void *__loader_dlvsym(void *handle, const char *symbol, const char *version,
+                             const void *caller_addr);
 static void *adapt_dlvsym(void *handle, const char *symbol, const char *version) {
-  (void)handle;
-  (void)symbol;
-  (void)version;
-  adapter_log("dlvsym not supported");
-  errno = ENOTSUP;
-  assert(0);
-  return NULL;
+  void *v = (void *)find_symbol_adapter(symbol);
+
+  if (v == NULL) {
+    const void *caller_addr = __builtin_return_address(0);
+    v = __loader_dlvsym(handle, symbol, version, caller_addr);
+  }
+
+  if (v) {
+    adapter_logv("dlvsym(%p, %s, %s) = %p", handle, symbol, version, v);
+  } else {
+    adapter_log("dlvsym(%p, %s, %s) = %s", handle, symbol, version, dlerror());
+  }
+  return v;
 }
 
 static int adapt_dladdr1(void *addr, Dl_info *info, void **extra_info, int flags) {
@@ -56,9 +64,8 @@ static int adapt_dladdr1(void *addr, Dl_info *info, void **extra_info, int flags
   (void)info;
   (void)extra_info;
   (void)flags;
-  adapter_log("dladdr1 not supported");
+  adapter_log("dladdr1(%p, %p, %p, %d) not supported", addr, info, extra_info, flags);
   errno = ENOTSUP;
-  assert(0);
   return 0;
 }
 
@@ -66,9 +73,8 @@ static void *adapt_dlmopen(long int lmid, const char *filename, int flags) {
   (void)lmid;
   (void)filename;
   (void)flags;
-  adapter_log("dlmopen not supported");
+  adapter_log("dlmopen(%ld, %s, %d) not supported", lmid, filename, flags);
   errno = ENOTSUP;
-  assert(0);
   return NULL;
 }
 
@@ -76,29 +82,32 @@ static int adapt_dlinfo(void *handle, int request, void *info) {
   (void)handle;
   (void)request;
   (void)info;
-  adapter_log("dlinfo not supported");
+  adapter_log("dlinfo(%p, %d, %p) not supported", handle, request, info);
   errno = ENOTSUP;
-  assert(0);
   return -1;
 }
 
 struct dl_phdr_info;
+extern int __loader_dl_iterate_phdr(int (*cb)(struct dl_phdr_info *info, size_t size, void *data),
+                                    void *data);
 static int adapt_dl_iterate_phdr(int (*callback)(struct dl_phdr_info *info, size_t size,
                                                  void *data),
                                  void *data) {
-  (void)callback;
-  (void)data;
-  adapter_log("dl_iterate_phdr not supported");
-  errno = ENOTSUP;
-  // assert(0);
-  return 0;
+  return __loader_dl_iterate_phdr(callback, data);
 }
 
 static struct glibc_adapter_t dlfcn_adapters[] = {
-    ADAPT_INDIRECT(dlopen),          ADAPT_INDIRECT(dlerror), ADAPT_INDIRECT(dlclose),
-    ADAPT_INDIRECT(dlsym),           ADAPT_INDIRECT(dlvsym),  ADAPT_DIRECT(dladdr),
-    ADAPT_INDIRECT(dladdr1),         ADAPT_INDIRECT(dlmopen), ADAPT_INDIRECT(dlinfo),
+    ADAPT_INDIRECT(dlopen),
+    ADAPT_INDIRECT(dlerror),
+    ADAPT_INDIRECT(dlclose),
+    ADAPT_INDIRECT(dlsym),
+    ADAPT_INDIRECT(dlvsym),
+    ADAPT_DIRECT(dladdr),
+    ADAPT_INDIRECT(dladdr1),
+    ADAPT_INDIRECT(dlmopen),
+    ADAPT_INDIRECT(dlinfo),
     ADAPT_INDIRECT(dl_iterate_phdr),
+    ADAPT_TO(_dl_sym, __loader_dlsym),
 };
 
 void register_adapters_dlfcn() { REGISTER_ADAPTERS_BY_CLASS(dlfcn); }
