@@ -27,6 +27,8 @@ static long adapt_sysconf(int name) {
   int map_name = sysconf_map[name];
   if (name != map_name && map_name <= 0) {
     adapter_log("sysconf name 0x%02x not implement", name);
+    errno = EINVAL;
+    return -1;
   }
   return sysconf(map_name);
 }
