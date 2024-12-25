@@ -40,6 +40,12 @@ static struct glibc_adapter_t fcntl_adapters[] = {
     ADAPT_TO(posix_fallocate64, posix_fallocate),
     ADAPT_TO(posix_fadvise64, posix_fadvise),
 
+    ADAPT_DIRECT(pread),
+    ADAPT_DIRECT(pwrite),
+
+    ADAPT_TO(pread64, pread),
+    ADAPT_TO(pwrite64, pwrite),
+
     ADAPT_DIRECT(isatty),
 };
 
