@@ -75,6 +75,7 @@ static void register_all_adapters() {
   REGISTER_ADAPTERS_BY_CLASSES(mman);
   REGISTER_ADAPTERS_BY_CLASSES(ctype);
   REGISTER_ADAPTERS_BY_CLASSES(sys);
+  REGISTER_ADAPTERS_BY_CLASSES(atexit);
 }
 
 static void sort_adapters() {
@@ -96,6 +97,6 @@ const void *find_symbol_adapter(const char *sym) {
   if (found) {
     return ((struct glibc_adapter_t *)found)->adapt_fun;
   }
-  adapter_logv("Not found %s", sym);
+  adapter_logv("Not found: %s", sym);
   return NULL;
 }

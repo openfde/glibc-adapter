@@ -12,9 +12,9 @@ static void *adapt_dlopen(const char *filename, int flag) {
   const void *caller_addr = __builtin_return_address(0);
   void *handle = __loader_dlopen(filename, flag, caller_addr);
   if (handle) {
-    adapter_logv("dlopen %s flag 0x%x, handle %p", filename, flag, handle);
+    adapter_logv("success to dlopen %s flag 0x%x, handle %p", filename, flag, handle);
   } else {
-    adapter_log("dlopen %s flag 0x%x. %s", filename, flag, dlerror());
+    adapter_log("fail to dlopen %s flag 0x%x. %s", filename, flag, dlerror());
   }
   return handle;
 }

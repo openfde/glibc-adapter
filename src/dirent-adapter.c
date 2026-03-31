@@ -68,6 +68,9 @@ static struct glibc_adapter_t dirent_adapters[] = {
     ADAPT_INDIRECT(alphasort64),
     ADAPT_INDIRECT(versionsort),
     ADAPT_INDIRECT(fnmatch),
+
+    // ADAPT_DIRECT(mkdir),
+    ADAPT_DIRECT(qsort),
 };
 
 void register_adapters_dirent() { REGISTER_ADAPTERS_BY_CLASS(dirent); }

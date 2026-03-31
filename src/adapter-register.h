@@ -12,7 +12,10 @@ struct glibc_adapter_t {
 };
 
 #define ADAPT_DIRECT(symbol)  {#symbol, (void *)symbol}
+#define ADAPT_DIRECT_openat(symbol)  {#symbol, (void *)(int (*)(int, const char *, int, ...))symbol}
+#define ADAPT_DIRECT_ioctl(symbol) {#symbol, (void*)(int (*)(int, int, ...))symbol}
 #define ADAPT_INDIRECT(symbol)  {#symbol, (void *)adapt_##symbol}
+#define ADAPT_TO_openat(symbol, hook)  {#symbol, (void *)(int (*)(int, const char *, int, ...))hook}
 #define ADAPT_TO(symbol, hook)  {#symbol, (void *)hook}
 
 int register_adapters(const char* classes, const struct glibc_adapter_t* adapters, size_t adapter_count);

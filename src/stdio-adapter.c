@@ -523,6 +523,9 @@ static struct glibc_adapter_t stdio_adapters[] = {
 
     ADAPT_DIRECT(perror),
     ADAPT_DIRECT(vprintf),
+
+
+    ADAPT_DIRECT(rename),
 };
 
 void register_adapters_stdio() { REGISTER_ADAPTERS_BY_CLASS(stdio); }

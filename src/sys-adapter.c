@@ -5,7 +5,21 @@
 #include <sys/sysinfo.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/poll.h>
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <sys/timerfd.h>
+#include <sys/signalfd.h>
+#include <sys/stat.h>
+#include <sys/prctl.h>
+#include <sys/vfs.h>
+#include <sys/uio.h>
+#include <sys/shm.h>
+#include <sys/syscall.h>
+#include <sys/utsname.h>
+#include <sys/auxv.h>
+#include <sys/statvfs.h>
 
 #include "adapter-register.h"
 #include "misc/confname-maps.h"
@@ -59,6 +73,54 @@ static struct glibc_adapter_t sys_adapters[] = {
     ADAPT_TO(environ, &environ),
     ADAPT_TO(__environ, &environ),
     ADAPT_TO(ftruncate64, ftruncate),
+
+    ADAPT_DIRECT_ioctl(ioctl),
+    ADAPT_DIRECT(poll),
+    ADAPT_DIRECT(epoll_wait),
+    ADAPT_DIRECT(epoll_ctl),
+    ADAPT_DIRECT(epoll_create),
+    ADAPT_DIRECT(send),
+    ADAPT_DIRECT(connect),
+    ADAPT_DIRECT(socket),
+    ADAPT_DIRECT(getsockopt),
+    ADAPT_DIRECT(setsockopt),
+    ADAPT_DIRECT(getsockname),
+    ADAPT_DIRECT(recvmsg),
+    ADAPT_DIRECT(listen),
+    ADAPT_DIRECT(accept),
+    ADAPT_DIRECT(sendmsg),
+    ADAPT_DIRECT(timerfd_settime),
+    ADAPT_DIRECT(signalfd),
+    ADAPT_DIRECT(shutdown),
+    ADAPT_DIRECT(bind),
+    ADAPT_DIRECT(sysinfo),
+    ADAPT_DIRECT(clock_gettime),
+    ADAPT_DIRECT(mkdir),
+    ADAPT_DIRECT(chmod),
+    ADAPT_DIRECT(uname),
+    // ADAPT_DIRECT(umask),
+
+    ADAPT_DIRECT(timerfd_create),
+    ADAPT_DIRECT(epoll_create1),
+    ADAPT_DIRECT(accept4),
+    ADAPT_DIRECT(recv),
+    ADAPT_DIRECT(prctl),
+    ADAPT_DIRECT(statfs),
+    ADAPT_DIRECT(getpeername),
+    ADAPT_DIRECT(getrusage),
+    ADAPT_DIRECT(readv),
+    ADAPT_DIRECT(writev),
+    ADAPT_DIRECT(shmdt),
+    ADAPT_DIRECT(shmat),
+    ADAPT_DIRECT(shmctl),
+    ADAPT_DIRECT(syscall),
+    ADAPT_DIRECT(sendto),
+    ADAPT_DIRECT(recvfrom),
+    ADAPT_DIRECT(getauxval),
+    ADAPT_DIRECT(fstatfs),
+    ADAPT_DIRECT(getpriority),
+    ADAPT_DIRECT(fstatvfs),
+    ADAPT_DIRECT(statvfs),
 
 };
 

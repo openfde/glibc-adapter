@@ -31,29 +31,37 @@ static void adapt_bcopy(const void* src, void* dest, size_t n) { memcpy(dest, sr
 static void adapt_bzero(void* s, size_t n) { memset(s, 0, n); }
 
 static void* adapt_mesa_memmove(void* dest, const void* src, size_t n) {
-  adapter_logv("mesa_memmove(%p, %p, %lu)\n", dest, src, n);
+  // adapter_logv("mesa_memmove(%p, %p, %lu)\n", dest, src, n);
   return memmove(dest, src, n);
 }
 
 static void* adapt_mesa_memset(void* s, int c, size_t n) {
-  adapter_logv("mesa_memset(%p, %i, %lu)\n", s, c, n);
+  // adapter_logv("mesa_memset(%p, %i, %lu)\n", s, c, n);
   return memset(s, c, n);
 }
 
 static void* adapt_mesa_memcpy(void* dest, const void* src, size_t n) {
-  adapter_logv("mesa_memcpy(%p, %p, %lu)\n", dest, src, n);
+  // adapter_logv("mesa_memcpy(%p, %p, %lu)\n", dest, src, n);
   return memcpy(dest, src, n);
 }
 
 static void* adapt_rawmemchr(const void* s, int c) { return memchr(s, c, -1); }
 
 static void* adapt_mempcpy(void* dest, const void* src, size_t n) {
+  // adapter_logv("__memcpy %p, %p, %d", dest, src, n);
+  memcpy(dest, src, n);
+  return (char*)dest + n;
+}
+
+static void* direct_memcpy(void* dest, const void* src, size_t n) {
+  // adapter_logv("memcpy %p, %p, %d", dest, src, n);
   memcpy(dest, src, n);
   return (char*)dest + n;
 }
 
 extern void* __memcpy_chk(void* dest, const void* src, size_t len, size_t destlen);
 static void* adapt___memcpy_chk(void* dest, const void* src, size_t len, size_t destlen) {
+  // adapter_logv("__memcpy_chk %p, %p, %d-%d", dest, src, len, destlen);
   return __memcpy_chk(dest, src, len, destlen);
 }
 
@@ -71,6 +79,8 @@ static struct glibc_adapter_t string_adapters[] = {
     ADAPT_DIRECT(memrchr),
     ADAPT_DIRECT(memcmp),
     ADAPT_DIRECT(memcpy),
+    // ADAPT_TO(memcpy, direct_memcpy),
+
     ADAPT_DIRECT(memmove),
     ADAPT_DIRECT(memset),
     ADAPT_DIRECT(memmem),
@@ -149,6 +159,9 @@ static struct glibc_adapter_t string_adapters[] = {
     ADAPT_INDIRECT(bcopy),
     ADAPT_INDIRECT(bzero),
     ADAPT_DIRECT(ffs),
+
+    // time.h
+    ADAPT_DIRECT(nanosleep),
 };
 
 void register_adapters_string() { REGISTER_ADAPTERS_BY_CLASS(string); }

@@ -1,5 +1,6 @@
 #include <errno.h>
 #define _GNU_SOURCE
+#define __USE_GNU
 #include <sys/mman.h>
 
 #include "adapter-register.h"
@@ -12,6 +13,9 @@ static struct glibc_adapter_t mman_adapters[] = {
     ADAPT_DIRECT(munmap),
     ADAPT_DIRECT(msync),
     ADAPT_DIRECT(mremap),
+    ADAPT_TO(__mmap, mmap),
+    ADAPT_TO(__munmap, munmap),
+    ADAPT_DIRECT(memfd_create),
 };
 
 void register_adapters_mman() { REGISTER_ADAPTERS_BY_CLASS(mman); }
