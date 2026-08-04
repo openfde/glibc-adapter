@@ -20,6 +20,7 @@
 #include <sys/utsname.h>
 #include <sys/auxv.h>
 #include <sys/statvfs.h>
+#include <sys/eventfd.h>
 
 #include "adapter-register.h"
 #include "misc/confname-maps.h"
@@ -121,6 +122,21 @@ static struct glibc_adapter_t sys_adapters[] = {
     ADAPT_DIRECT(getpriority),
     ADAPT_DIRECT(fstatvfs),
     ADAPT_DIRECT(statvfs),
+
+    ADAPT_DIRECT(fstat),
+    ADAPT_TO(fstat64, fstat),
+    ADAPT_DIRECT(stat),
+    ADAPT_TO(stat64, stat),
+
+    ADAPT_DIRECT(lstat),
+    ADAPT_TO(lstat64, lstat),
+    ADAPT_DIRECT(fstatat),
+    ADAPT_TO(fstatat64, fstatat),
+
+    ADAPT_DIRECT(eventfd),
+    ADAPT_DIRECT(setpriority),
+    ADAPT_DIRECT(mkfifoat),
+    ADAPT_DIRECT(mknod),
 
 };
 

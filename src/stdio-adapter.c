@@ -127,6 +127,16 @@ static FILE *adapt_freopen64(const char *filename, const char *mode, FILE *fp) {
   return freopen64(filename, mode, adapt_stdio_handle(fp));
 }
 
+static size_t adapt___fread_chk(void *ptr, size_t ptrlen, size_t size, size_t n, FILE *fp) {
+  // adapter_logv("__fread_chk fp %p, ptrlen:%d, size:%d, n:%d", fp, ptrlen, size, n);
+  return __fread_chk(ptr, size, n, adapt_stdio_handle(fp), ptrlen);
+}
+
+extern ssize_t __read_chk(int fd, void* buf, size_t count, size_t buf_size);
+static size_t adapt___read_chk(int fd, void* buf, size_t count, size_t buf_size) {
+  return __read_chk(fd, buf, count, buf_size);
+}
+
 static int adapt___isoc99_fscanf(FILE *fp, const char *fmt, ...) {
   int ret = 0;
   adapter_logv("fscanf fp %p fmt '%s'", fp, fmt);
@@ -484,10 +494,17 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(setbuffer),
     ADAPT_INDIRECT(setlinebuf),
 
+    ADAPT_INDIRECT(__fread_chk),
+    ADAPT_INDIRECT(__read_chk),
+
     ADAPT_DIRECT(sscanf),
     ADAPT_INDIRECT(__isoc99_sscanf),
     ADAPT_INDIRECT(__isoc99_fscanf),
     ADAPT_INDIRECT(__isoc99_scanf),
+
+    ADAPT_TO(__isoc23_sscanf, adapt___isoc99_sscanf),
+    ADAPT_TO(__isoc23_fscanf, adapt___isoc99_fscanf),
+    ADAPT_TO(__isoc23_scanf, adapt___isoc99_scanf),
 
     ADAPT_INDIRECT(__fprintf_chk),
     ADAPT_INDIRECT(__printf_chk),
@@ -497,6 +514,7 @@ static struct glibc_adapter_t stdio_adapters[] = {
     ADAPT_INDIRECT(__vfprintf_chk),
     ADAPT_INDIRECT(__asprintf_chk),
 
+    ADAPT_DIRECT(__vsprintf_chk),
     ADAPT_DIRECT(__vsnprintf_chk),
     ADAPT_DIRECT(putchar),
     ADAPT_TO(__asprintf, asprintf),
