@@ -100,6 +100,12 @@ static int adapt_pthread_create(pthread_t* thread, const pthread_attr_t* attr,
     return pthread_create(thread, real_attr, start_routine, arg);
 }
 
+static int adapter_register_atfork(void (*__prepare)(void), void (*__parent)(void),
+                                 void(*__child)(void), void* dso)
+{
+    return pthread_atfork(__prepare, __parent, __child);
+}
+
 static int adapt_pthread_kill(pthread_t thread, int sig) {
     if (thread == 0) {
         return ESRCH;
@@ -525,6 +531,7 @@ extern int pthread_getname_np(pthread_t thread, char* name, size_t len);
 
 static struct glibc_adapter_t pthread_adapters[] = {
     ADAPT_INDIRECT(pthread_create),
+    ADAPT_DIRECT(pthread_atfork),
     ADAPT_DIRECT(pthread_exit),
     ADAPT_INDIRECT(pthread_kill),
     ADAPT_DIRECT(pthread_join),
@@ -547,6 +554,8 @@ static struct glibc_adapter_t pthread_adapters[] = {
     ADAPT_TO(__pthread_key_create, pthread_key_create),
     ADAPT_TO(__pthread_setspecific, pthread_setspecific),
     ADAPT_TO(__pthread_getspecific, pthread_getspecific),
+    ADAPT_TO(__pthread_atfork, pthread_atfork),
+    ADAPT_TO(__register_atfork, adapter_register_atfork),
 
     // thread attributes
     ADAPT_INDIRECT(pthread_attr_init),

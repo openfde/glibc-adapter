@@ -32,6 +32,7 @@ static struct glibc_adapter_t wchar_adapters[] = {
     ADAPT_DIRECT(wcsnrtombs),
     ADAPT_DIRECT(wcsstr),
     ADAPT_DIRECT(wcstol),
+    ADAPT_TO(__isoc23_wcstol, wcstol),
     ADAPT_DIRECT(wcstombs),
     ADAPT_DIRECT(wctob),
 

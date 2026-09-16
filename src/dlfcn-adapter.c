@@ -12,9 +12,9 @@ static void *adapt_dlopen(const char *filename, int flag) {
   const void *caller_addr = __builtin_return_address(0);
   void *handle = __loader_dlopen(filename, flag, caller_addr);
   if (handle) {
-    adapter_logv("dlopen %s flag 0x%x, handle %p", filename, flag, handle);
+    adapter_logv("success to dlopen %s flag 0x%x, handle %p", filename, flag, handle);
   } else {
-    adapter_log("dlopen %s flag 0x%x. %s", filename, flag, dlerror());
+    adapter_log("fail to dlopen %s flag 0x%x. %s", filename, flag, dlerror());
   }
   return handle;
 }
@@ -27,9 +27,9 @@ static void *adapt_dlsym(void *handle, const char *symbol) {
     v = __loader_dlsym(handle, symbol, caller_addr);
   }
   if (v) {
-    adapter_logv("dlsym handle %p symbol %s addr %p", handle, symbol, v);
+    adapter_logv("success to dlsym handle %p symbol %s addr %p", handle, symbol, v);
   } else {
-    adapter_log("dlsym handle %p symbol %s. %s", handle, symbol, dlerror());
+    adapter_log("fail to dlsym handle %p symbol %s. %s", handle, symbol, dlerror());
   }
   return v;
 }
@@ -52,9 +52,9 @@ static void *adapt_dlvsym(void *handle, const char *symbol, const char *version)
   }
 
   if (v) {
-    adapter_logv("dlvsym(%p, %s, %s) = %p", handle, symbol, version, v);
+    adapter_logv("success to dlvsym(%p, %s, %s) = %p", handle, symbol, version, v);
   } else {
-    adapter_log("dlvsym(%p, %s, %s) = %s", handle, symbol, version, dlerror());
+    adapter_log("fail to dlvsym(%p, %s, %s) = %s", handle, symbol, version, dlerror());
   }
   return v;
 }

@@ -5,6 +5,8 @@
 
 #include "adapter-register.h"
 
+#define VERSION "V0.0.2"
+
 extern const void *find_symbol_adapter(const char *sym) __attribute__((visibility("default")));
 
 int adapter_log(const char *fmt, ...) {
@@ -60,6 +62,7 @@ static int adapter_cmp(const void *a, const void *b) {
   register_adapters_##classes()
 
 static void register_all_adapters() {
+  adapter_log("init glibc adapter version:%s", VERSION);
   REGISTER_ADAPTERS_BY_CLASSES(fcntl);
   REGISTER_ADAPTERS_BY_CLASSES(stdio);
   REGISTER_ADAPTERS_BY_CLASSES(errno);
@@ -75,6 +78,7 @@ static void register_all_adapters() {
   REGISTER_ADAPTERS_BY_CLASSES(mman);
   REGISTER_ADAPTERS_BY_CLASSES(ctype);
   REGISTER_ADAPTERS_BY_CLASSES(sys);
+  REGISTER_ADAPTERS_BY_CLASSES(atexit);
 }
 
 static void sort_adapters() {
@@ -96,6 +100,6 @@ const void *find_symbol_adapter(const char *sym) {
   if (found) {
     return ((struct glibc_adapter_t *)found)->adapt_fun;
   }
-  adapter_logv("Not found %s", sym);
+  adapter_logv("Not found: %s", sym);
   return NULL;
 }

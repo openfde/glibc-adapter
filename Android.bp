@@ -1,0 +1,68 @@
+
+filegroup {
+    name: "glibc_adapter_files",
+
+    srcs: [
+        "src/stdio-adapter.c",
+        "src/fcntl-adapter.c",
+        "src/errno-adapter.c",
+        "src/string-adapter.c",
+        "src/dlfcn-adapter.c",
+        "src/stdlib-adapter.c",
+        "src/pthread-adapter.c",
+        "src/malloc-adapter.c",
+        "src/dirent-adapter.c",
+        "src/regex-adapter.c",
+        "src/locale-adapter.c",
+        "src/wchar-adapter.c",
+        "src/mman-adapter.c",
+        "src/ctype-adapter.c",
+        "src/sys-adapter.c",
+        "src/glibc-adapter.c",
+        "src/atexit-adapter.c",
+    ],
+}
+
+cc_library_shared {
+    name: "libglibc-adapter",
+    defaults: ["glibc_adapter_defaults"],
+    srcs: [":glibc_adapter_files"],
+}
+
+cc_defaults {
+    name: "glibc_adapter_defaults",
+
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-parameter",
+        "-DTAG=glibc-adapter",
+    ],
+
+    ldflags: [
+    ],
+
+    vendor_available: true,
+    vndk: {
+        enabled: true,
+    },
+
+    shared_libs: [
+        "libdl",
+        "libsync",
+        "liblog",
+    ],
+}
+
+cc_binary {
+    name: "test-glibc-adapter",
+    srcs: ["test/test-glibc-adapter.c"],
+    shared_libs: [
+        "libglibc-adapter",
+    ],
+    include_dirs: [
+        "external/glibc-adapter/src/",
+    ],
+    vendor: true,
+}
