@@ -50,6 +50,12 @@ static int adapt_fnmatch(const char* pattern, const char* string, int flags) {
   return fnmatch(pattern, string, flags);
 }
 
+static void adapt___assert_fail(const char *assertion, const char *file,
+                                unsigned int line, const char *function) {
+    /* bionic 的 __assert2 参数顺序为 (file, line, function, expression) */
+    __assert2(file, (int)line, function ? function : "", assertion);
+}
+
 static struct glibc_adapter_t dirent_adapters[] = {
     ADAPT_DIRECT(opendir),
     ADAPT_DIRECT(fdopendir),
@@ -71,6 +77,8 @@ static struct glibc_adapter_t dirent_adapters[] = {
 
     // ADAPT_DIRECT(mkdir),
     ADAPT_DIRECT(qsort),
+
+    ADAPT_INDIRECT(__assert_fail),
 };
 
 void register_adapters_dirent() { REGISTER_ADAPTERS_BY_CLASS(dirent); }
