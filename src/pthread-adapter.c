@@ -4,6 +4,9 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <time.h>
+#include <signal.h>
+#include <string.h>
+#include <sys/sysconf.h>
 
 #include "adapter-register.h"
 
@@ -529,6 +532,39 @@ static int adapt_pthread_rwlockattr_setpshared(pthread_rwlockattr_t* attr,
 extern int pthread_setname_np(pthread_t thread, const char* name);
 extern int pthread_getname_np(pthread_t thread, char* name, size_t len);
 
+/* glibc sigset_t 为 1024 位 = 128 字节；bionic LP32 sigset_t 为 32 位 = 4 字节 */
+static int adapt_pthread_sigmask(int how, const void *set, void *oldset) {
+    uint32_t bionic_set = 0, bionic_oldset = 0;
+    int ret;
+
+    if (set) {
+        /* 只取 glibc sigset_t 的前 32 位（低 32 个信号） */
+        bionic_set = *(const uint32_t *)set;
+    }
+
+    ret = pthread_sigmask(how, set ? (const sigset_t *)&bionic_set : NULL,
+                          oldset ? (sigset_t *)&bionic_oldset : NULL);
+
+    if (oldset && ret == 0) {
+        /* 将 bionic 的 4 字节结果零扩展到 glibc 的 128 字节 */
+        memset(oldset, 0, 128);
+        *(uint32_t *)oldset = bionic_oldset;
+    }
+    return ret;
+}
+
+static size_t adapt___pthread_get_minstack(const pthread_attr_t *attr) {
+    (void)attr;
+    /* 返回 bionic 的线程最小栈大小；bionic 默认栈为 1MB，
+       但最小可用栈受 guard page 和 TLS 影响 */
+    return (size_t)sysconf(_SC_THREAD_STACK_MIN);  /* 通常为 16384 */
+}
+
+static int adapt_pthread_cancel(pthread_t thread) {
+    /* bionic 无原生取消；变通：发送 SIGUSR1，由调用方的信号处理器处理 */
+    return pthread_kill(thread, SIGUSR1);
+}
+
 static struct glibc_adapter_t pthread_adapters[] = {
     ADAPT_INDIRECT(pthread_create),
     ADAPT_DIRECT(pthread_atfork),
@@ -622,6 +658,12 @@ static struct glibc_adapter_t pthread_adapters[] = {
     ADAPT_INDIRECT(pthread_rwlockattr_destroy),
     ADAPT_INDIRECT(pthread_rwlockattr_setpshared),
     ADAPT_INDIRECT(pthread_rwlockattr_getpshared),
+
+    ADAPT_INDIRECT(pthread_sigmask),
+    ADAPT_TO(__pthread_barrier_init, pthread_barrier_init),
+    ADAPT_INDIRECT(__pthread_get_minstack),
+    ADAPT_INDIRECT(pthread_cancel),
+    
 };
 
 void register_adapters_pthread() { REGISTER_ADAPTERS_BY_CLASS(pthread); }

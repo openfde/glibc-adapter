@@ -4,12 +4,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "adapter-register.h"
 
 static int adapt_open(const char *pathname, int flags, mode_t mode) {
   int fd = open(pathname, flags, mode);
-  adapter_logv("file : %s, fd : %d, errno : %d", pathname, fd, errno);
+  adapter_logv("hybris - open file : %s, fd : %d, errno : %d", pathname, fd, errno);
+  return fd;
+}
+
+static int adapt_close(int fd) {
+  int ret = close(fd);
+  // adapter_logv("hybris - close fd : %d, ret : %d", fd, ret);
   return fd;
 }
 
@@ -18,9 +25,18 @@ static int adapt___getpid(void) {
   return __getpid();
 }
 
+static pid_t adapt_waitpid(pid_t pid, int *status, int options) {
+    pid_t ret;
+    do {
+        ret = waitpid(pid, status, options);
+    } while (ret == -1 && errno == EINTR);
+    return ret;
+}
+
 static struct glibc_adapter_t fcntl_adapters[] = {
     ADAPT_INDIRECT(open),
-    ADAPT_DIRECT(close),
+    // ADAPT_DIRECT(close),
+    ADAPT_INDIRECT(close),
     ADAPT_DIRECT(fork),
     ADAPT_DIRECT(ttyname),
     ADAPT_DIRECT(fmemopen),
@@ -60,6 +76,7 @@ static struct glibc_adapter_t fcntl_adapters[] = {
     ADAPT_DIRECT(unlink),
     ADAPT_DIRECT(access),
     ADAPT_DIRECT(dup),
+    ADAPT_DIRECT(dup2),
     ADAPT_DIRECT(usleep),
     ADAPT_DIRECT(geteuid),
     ADAPT_DIRECT(remove),
@@ -84,6 +101,12 @@ static struct glibc_adapter_t fcntl_adapters[] = {
     // ADAPT_INDIRECT(__getpid), // cause bionic did_read fail
 
     ADAPT_DIRECT(sleep),
+
+    ADAPT_DIRECT(fallocate),
+    ADAPT_DIRECT(fallocate64),
+    ADAPT_DIRECT(setuid),
+    ADAPT_INDIRECT(waitpid),
+    ADAPT_TO(__libc_fork, fork),
 };
 
 void register_adapters_fcntl() { REGISTER_ADAPTERS_BY_CLASS(fcntl); }

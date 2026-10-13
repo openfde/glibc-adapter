@@ -139,7 +139,7 @@ static size_t adapt___read_chk(int fd, void* buf, size_t count, size_t buf_size)
 
 static int adapt___isoc99_fscanf(FILE *fp, const char *fmt, ...) {
   int ret = 0;
-  adapter_logv("fscanf fp %p fmt '%s'", fp, fmt);
+  // adapter_logv("fscanf fp %p fmt '%s'", fp, fmt);
   va_list args;
   va_start(args, fmt);
   ret = vfscanf(adapt_stdio_handle(fp), fmt, args);
@@ -149,7 +149,7 @@ static int adapt___isoc99_fscanf(FILE *fp, const char *fmt, ...) {
 
 static int adapt_fscanf(FILE *fp, const char *fmt, ...) {
   int ret = 0;
-  adapter_logv("fscanf fp %p fmt '%s'", fp, fmt);
+  // adapter_logv("fscanf fp %p fmt '%s'", fp, fmt);
   va_list args;
   va_start(args, fmt);
   ret = vfscanf(adapt_stdio_handle(fp), fmt, args);
