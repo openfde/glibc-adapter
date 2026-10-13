@@ -138,6 +138,8 @@ static struct glibc_adapter_t sys_adapters[] = {
     ADAPT_DIRECT(mkfifoat),
     ADAPT_DIRECT(mknod),
 
+    ADAPT_DIRECT(ppoll),
+
 };
 
 void register_adapters_sys() { REGISTER_ADAPTERS_BY_CLASS(sys); }

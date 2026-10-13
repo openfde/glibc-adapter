@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <search.h>
 
 #include <xlocale.h>
 
@@ -81,6 +82,12 @@ static struct glibc_adapter_t stdlib_adapters[] = {
 
     ADAPT_DIRECT(abort),
     ADAPT_DIRECT(bsearch),
+
+    ADAPT_DIRECT(tfind),
+    ADAPT_DIRECT(tsearch),
+    ADAPT_DIRECT(tdelete),
+
+    ADAPT_DIRECT(atoi),
 
 };
 

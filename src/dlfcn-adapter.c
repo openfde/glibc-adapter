@@ -96,6 +96,14 @@ static int adapt_dl_iterate_phdr(int (*callback)(struct dl_phdr_info *info, size
   return __loader_dl_iterate_phdr(callback, data);
 }
 
+static void *adapt___libc_dlopen_mode(const char *name, int mode) {
+    return dlopen(name, mode);
+}
+
+static int adapt___libc_dlclose(void *map) {
+    return dlclose(map);
+}
+
 static struct glibc_adapter_t dlfcn_adapters[] = {
     ADAPT_INDIRECT(dlopen),
     ADAPT_INDIRECT(dlerror),
@@ -107,7 +115,13 @@ static struct glibc_adapter_t dlfcn_adapters[] = {
     ADAPT_INDIRECT(dlmopen),
     ADAPT_INDIRECT(dlinfo),
     ADAPT_INDIRECT(dl_iterate_phdr),
-    ADAPT_TO(_dl_sym, __loader_dlsym),
+    ADAPT_TO(_dl_sym, dlsym),
+    ADAPT_TO(_dl_addr, dladdr),
+    ADAPT_TO(__libc_dlsym, dlsym),
+
+    ADAPT_INDIRECT(__libc_dlopen_mode),
+    ADAPT_INDIRECT(__libc_dlclose),
+
 };
 
 void register_adapters_dlfcn() { REGISTER_ADAPTERS_BY_CLASS(dlfcn); }
