@@ -100,6 +100,6 @@ const void *find_symbol_adapter(const char *sym) {
   if (found) {
     return ((struct glibc_adapter_t *)found)->adapt_fun;
   }
-  adapter_logv("Not found: %s", sym);
+  // adapter_logv("Not found: %s", sym);
   return NULL;
 }
