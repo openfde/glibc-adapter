@@ -45,8 +45,9 @@ cc_defaults {
 
     vendor_available: true,
     vndk: {
-        enabled: true,
+        enabled: false,
     },
+    compile_multilib: "both",
 
     shared_libs: [
         "libdl",
