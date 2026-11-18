@@ -1,3 +1,4 @@
+#define __BIONIC_DISABLE_MALLOC_USABLE_SIZE_FORTIFY_WARNINGS
 #include <assert.h>
 #include <errno.h>
 #include <malloc.h>

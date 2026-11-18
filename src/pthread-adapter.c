@@ -213,7 +213,8 @@ static int adapt_pthread_attr_setstackaddr(pthread_attr_t* attr, void* stackaddr
 static int adapt_pthread_attr_getstackaddr(const pthread_attr_t* attr,
     void** stackaddr) {
     pthread_attr_t* real_attr = (pthread_attr_t*)*(uintptr_t*)attr;
-    return pthread_attr_getstack(real_attr, stackaddr, NULL);
+    size_t stacksize = 0;
+    return pthread_attr_getstack(real_attr, stackaddr, &stacksize);
 }
 
 static int adapt_pthread_attr_setstack(pthread_attr_t* attr,
