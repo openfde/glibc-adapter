@@ -35,6 +35,14 @@ static void* adapt_mesa_memmove(void* dest, const void* src, size_t n) {
   return memmove(dest, src, n);
 }
 
+static void* adapt_strstr(const char *main_str, const char *sub_str) {
+  if (main_str == NULL || sub_str == NULL) {
+    // adapter_logv("adapt_strstr is NULL\n");
+    return NULL;
+  }
+  return strstr(main_str, sub_str);
+}
+
 static void* adapt_mesa_memset(void* s, int c, size_t n) {
   // adapter_logv("mesa_memset(%p, %i, %lu)\n", s, c, n);
   return memset(s, c, n);
@@ -170,7 +178,9 @@ static struct glibc_adapter_t string_adapters[] = {
     ADAPT_DIRECT(strcasecmp),
     ADAPT_DIRECT(strncasecmp),
     ADAPT_DIRECT(strdup),
-    ADAPT_DIRECT(strstr),
+    ADAPT_TO(__strdup, strdup),
+    // ADAPT_DIRECT(strstr),
+    ADAPT_INDIRECT(strstr),
     ADAPT_DIRECT(strtok),
     ADAPT_DIRECT(strtok_r),
     ADAPT_DIRECT(strerror),

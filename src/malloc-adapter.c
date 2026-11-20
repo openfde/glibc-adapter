@@ -1,3 +1,4 @@
+#define __BIONIC_DISABLE_MALLOC_USABLE_SIZE_FORTIFY_WARNINGS
 #include <assert.h>
 #include <errno.h>
 #include <malloc.h>
@@ -57,6 +58,8 @@ static struct glibc_adapter_t malloc_adapters[] = {
     ADAPT_INDIRECT(__memalign_hook),
     ADAPT_INDIRECT(__malloc_hook),
     ADAPT_INDIRECT(__free_hook),
+
+    ADAPT_DIRECT(malloc_usable_size),
 };
 
 void register_adapters_malloc() { REGISTER_ADAPTERS_BY_CLASS(malloc); }

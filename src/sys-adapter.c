@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <pwd.h>
+#include <sys/random.h>
 #include <sys/file.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
@@ -118,6 +119,7 @@ static struct glibc_adapter_t sys_adapters[] = {
     ADAPT_DIRECT(sendto),
     ADAPT_DIRECT(recvfrom),
     ADAPT_DIRECT(getauxval),
+    ADAPT_DIRECT(getrandom),
     ADAPT_DIRECT(fstatfs),
     ADAPT_DIRECT(getpriority),
     ADAPT_DIRECT(fstatvfs),
@@ -137,6 +139,8 @@ static struct glibc_adapter_t sys_adapters[] = {
     ADAPT_DIRECT(setpriority),
     ADAPT_DIRECT(mkfifoat),
     ADAPT_DIRECT(mknod),
+
+    ADAPT_DIRECT(ppoll),
 
 };
 

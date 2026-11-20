@@ -4,18 +4,44 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <time.h>
+#include <signal.h>
+#include <string.h>
+#include <sys/sysconf.h>
 
 #include "adapter-register.h"
 
 
 #define mutex_kind_index_in_64bits_machine 4
+
+/*
+ * 槽里存的到底是「本模块 malloc 出来的指针」，还是「结构体自带的运行状态」？
+ *
+ * glibc 的 pthread_mutex_t / pthread_cond_t / pthread_rwlock_t 都是内嵌状态
+ * 结构：正常使用后 __lock / __wseq / __cur_writer 这类字段会变成 1、2、0x38
+ * 之类的小整数。原实现用「非零即为指针」判断，于是把这些小整数当指针解引用。
+ * 实测崩溃路径：libxcb 的 pthread_cond_signal -> adapt_pthread_cond_signal ->
+ * get_or_initialize_real_cond，fault addr 0x38（就是 __wseq 的当前值）。
+ *
+ * 这里加一道最小护栏：只有「看起来像用户空间堆指针」（非低地址、非内核区、
+ * 按指针宽度对齐）才认为是本模块写进去的；否则一律当作尚未接管，走初始化
+ * 分支重新 malloc 并写回槽。极端情况下 __wseq 恰好长得像指针仍会误判，但
+ * 那比「每次同步调用都可能崩」好得多。
+ */
+static inline int looks_like_pointer(uintptr_t p) {
+  return p >= 0x10000u && p < 0x0000800000000000ULL &&
+         (p & (sizeof(void*) - 1)) == 0;
+}
+
+#define SLOT_PTR(type, slot) \
+  (looks_like_pointer(*(uintptr_t *)(slot)) ? (type *)*(uintptr_t *)(slot) : NULL)
+
 static pthread_mutex_t g_pthread_mutex_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t* get_or_initialize_real_mutex(pthread_mutex_t* mutex) {
   assert(mutex);
-  pthread_mutex_t* real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+  pthread_mutex_t* real_mutex = SLOT_PTR(pthread_mutex_t, mutex);
   if (!real_mutex) {
     pthread_mutex_lock(&g_pthread_mutex_lock);
-    real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+    real_mutex = SLOT_PTR(pthread_mutex_t, mutex);
     if (!real_mutex) {
       // the kind has the same layout in aarch64 and x86_64
       int mutex_kind = ((int*)mutex)[mutex_kind_index_in_64bits_machine];
@@ -41,10 +67,10 @@ static pthread_mutex_t* get_or_initialize_real_mutex(pthread_mutex_t* mutex) {
 static pthread_mutex_t g_pthread_cond_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t* get_or_initialize_real_cond(pthread_cond_t* cond) {
   assert(cond);
-  pthread_cond_t* real_cond = (pthread_cond_t*)*(uintptr_t*)cond;
+  pthread_cond_t* real_cond = SLOT_PTR(pthread_cond_t, cond);
   if (!real_cond) {
     pthread_mutex_lock(&g_pthread_cond_lock);
-    real_cond = (pthread_cond_t*)*(uintptr_t*)cond;
+    real_cond = SLOT_PTR(pthread_cond_t, cond);
     if (!real_cond) {
       // use PTHREAD_COND_INITIALIZER to initialize mutex by user.
       // warning: memory leak if user not call pthread_cond_destory.
@@ -67,10 +93,10 @@ static pthread_cond_t* get_or_initialize_real_cond(pthread_cond_t* cond) {
 static pthread_mutex_t g_pthread_rwlock_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_rwlock_t* get_or_initialize_real_rwlock(pthread_rwlock_t* rwlock) {
   assert(rwlock);
-  pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+  pthread_rwlock_t* real_rwlock = SLOT_PTR(pthread_rwlock_t, rwlock);
   if (!real_rwlock) {
     pthread_mutex_lock(&g_pthread_rwlock_lock);
-    real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    real_rwlock = SLOT_PTR(pthread_rwlock_t, rwlock);
     if (!real_rwlock) {
       // use PTHREAD_RWLOCK_INITIALIZER to initialize mutex by user.
       // warning: memory leak if user not call pthread_rwlock_destory.
@@ -187,7 +213,8 @@ static int adapt_pthread_attr_setstackaddr(pthread_attr_t* attr, void* stackaddr
 static int adapt_pthread_attr_getstackaddr(const pthread_attr_t* attr,
     void** stackaddr) {
     pthread_attr_t* real_attr = (pthread_attr_t*)*(uintptr_t*)attr;
-    return pthread_attr_getstack(real_attr, stackaddr, NULL);
+    size_t stacksize = 0;
+    return pthread_attr_getstack(real_attr, stackaddr, &stacksize);
 }
 
 static int adapt_pthread_attr_setstack(pthread_attr_t* attr,
@@ -258,7 +285,7 @@ static int adapt_pthread_mutex_destroy(pthread_mutex_t* mutex) {
     if (mutex == NULL) {
         return EINVAL;
     }
-    pthread_mutex_t* real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+    pthread_mutex_t* real_mutex = SLOT_PTR(pthread_mutex_t, mutex);
     if (real_mutex == NULL) {
         return EINVAL;
     }
@@ -283,7 +310,7 @@ static int adapt_pthread_mutex_unlock(pthread_mutex_t* mutex) {
     if (mutex == NULL) {
         return 0;
     }
-    pthread_mutex_t* real_mutex = (pthread_mutex_t*)*(uintptr_t*)mutex;
+    pthread_mutex_t* real_mutex = SLOT_PTR(pthread_mutex_t, mutex);
     if (!real_mutex) {
         return 0;
     }
@@ -342,7 +369,7 @@ static int adapt_pthread_cond_destroy(pthread_cond_t* cond) {
     if (cond == NULL) {
         return EINVAL;
     }
-    pthread_cond_t* real_cond = (pthread_cond_t*)*(uintptr_t*)cond;
+    pthread_cond_t* real_cond = SLOT_PTR(pthread_cond_t, cond);
     if (real_cond == NULL) {
         return EINVAL;
     }
@@ -352,40 +379,63 @@ static int adapt_pthread_cond_destroy(pthread_cond_t* cond) {
     return ret;
 }
 
+/*
+ * 参数本身就不是合法地址（比如 libxcb 传进来的 0x38 = 结构体成员偏移），
+ * 这时候连「读槽」都不能做，只能不做事直接返回。
+ *
+ * 为什么不 assert / 不 abort：这条路径来自 glibc 库（libxcb）在 bionic 进程里
+ * 的同步调用，一次唤醒丢失不至于毁掉整个 composer 进程；而崩掉会让系统直接
+ * 黑屏。日志限次，避免刷屏。
+ */
+static int bad_cond_arg(const char* fn, const void* cond) {
+    static int warned;
+    if (warned < 8) {
+        warned++;
+        adapter_log("%s: 非法 cond 指针 %p，已跳过（该唤醒可能丢失）", fn, cond);
+    }
+    return 0;
+}
+
 static int adapt_pthread_cond_broadcast(pthread_cond_t* cond) {
-    assert(cond);
+    if (!looks_like_pointer((uintptr_t)cond))
+        return bad_cond_arg("pthread_cond_broadcast", cond);
     pthread_cond_t* real_cond = get_or_initialize_real_cond(cond);
-    assert(real_cond);
+    if (!real_cond)
+        return EINVAL;
     return pthread_cond_broadcast(real_cond);
 }
 
 static int adapt_pthread_cond_signal(pthread_cond_t* cond) {
-    assert(cond);
+    if (!looks_like_pointer((uintptr_t)cond))
+        return bad_cond_arg("pthread_cond_signal", cond);
     pthread_cond_t* real_cond = get_or_initialize_real_cond(cond);
-    assert(real_cond);
+    if (!real_cond)
+        return EINVAL;
     return pthread_cond_signal(real_cond);
 }
 
 static int adapt_pthread_cond_timedwait(pthread_cond_t* restrict cond,
     pthread_mutex_t* restrict mutex,
     const struct timespec* restrict abstime) {
-    assert(cond);
-    assert(mutex);
+    if (!looks_like_pointer((uintptr_t)cond) ||
+        !looks_like_pointer((uintptr_t)mutex))
+        return bad_cond_arg("pthread_cond_timedwait", cond);
     pthread_cond_t* real_cond = get_or_initialize_real_cond(cond);
     pthread_mutex_t* real_mutex = get_or_initialize_real_mutex(mutex);
-    assert(real_cond);
-    assert(real_mutex);
+    if (!real_cond || !real_mutex)
+        return EINVAL;
     return pthread_cond_timedwait(real_cond, real_mutex, abstime);
 }
 
 static int adapt_pthread_cond_wait(pthread_cond_t* restrict cond,
     pthread_mutex_t* restrict mutex) {
-    assert(cond);
-    assert(mutex);
+    if (!looks_like_pointer((uintptr_t)cond) ||
+        !looks_like_pointer((uintptr_t)mutex))
+        return bad_cond_arg("pthread_cond_wait", cond);
     pthread_cond_t* real_cond = get_or_initialize_real_cond(cond);
     pthread_mutex_t* real_mutex = get_or_initialize_real_mutex(mutex);
-    assert(real_cond);
-    assert(real_mutex);
+    if (!real_cond || !real_mutex)
+        return EINVAL;
     return pthread_cond_wait(real_cond, real_mutex);
 }
 
@@ -441,7 +491,7 @@ static int adapt_pthread_rwlock_init(pthread_rwlock_t* restrict rwlock,
 
 static int adapt_pthread_rwlock_destroy(pthread_rwlock_t* rwlock) {
     assert(rwlock);
-    pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    pthread_rwlock_t* real_rwlock = SLOT_PTR(pthread_rwlock_t, rwlock);
     if (!real_rwlock) {
         return 0;
     }
@@ -453,7 +503,7 @@ static int adapt_pthread_rwlock_destroy(pthread_rwlock_t* rwlock) {
 
 static int adapt_pthread_rwlock_unlock(pthread_rwlock_t* rwlock) {
     assert(rwlock);
-    pthread_rwlock_t* real_rwlock = (pthread_rwlock_t*)*(uintptr_t*)rwlock;
+    pthread_rwlock_t* real_rwlock = SLOT_PTR(pthread_rwlock_t, rwlock);
     if (!real_rwlock) {
         return 0;
     }
@@ -528,6 +578,39 @@ static int adapt_pthread_rwlockattr_setpshared(pthread_rwlockattr_t* attr,
 
 extern int pthread_setname_np(pthread_t thread, const char* name);
 extern int pthread_getname_np(pthread_t thread, char* name, size_t len);
+
+/* glibc sigset_t 为 1024 位 = 128 字节；bionic LP32 sigset_t 为 32 位 = 4 字节 */
+static int adapt_pthread_sigmask(int how, const void *set, void *oldset) {
+    uint32_t bionic_set = 0, bionic_oldset = 0;
+    int ret;
+
+    if (set) {
+        /* 只取 glibc sigset_t 的前 32 位（低 32 个信号） */
+        bionic_set = *(const uint32_t *)set;
+    }
+
+    ret = pthread_sigmask(how, set ? (const sigset_t *)&bionic_set : NULL,
+                          oldset ? (sigset_t *)&bionic_oldset : NULL);
+
+    if (oldset && ret == 0) {
+        /* 将 bionic 的 4 字节结果零扩展到 glibc 的 128 字节 */
+        memset(oldset, 0, 128);
+        *(uint32_t *)oldset = bionic_oldset;
+    }
+    return ret;
+}
+
+static size_t adapt___pthread_get_minstack(const pthread_attr_t *attr) {
+    (void)attr;
+    /* 返回 bionic 的线程最小栈大小；bionic 默认栈为 1MB，
+       但最小可用栈受 guard page 和 TLS 影响 */
+    return (size_t)sysconf(_SC_THREAD_STACK_MIN);  /* 通常为 16384 */
+}
+
+static int adapt_pthread_cancel(pthread_t thread) {
+    /* bionic 无原生取消；变通：发送 SIGUSR1，由调用方的信号处理器处理 */
+    return pthread_kill(thread, SIGUSR1);
+}
 
 static struct glibc_adapter_t pthread_adapters[] = {
     ADAPT_INDIRECT(pthread_create),
@@ -622,6 +705,12 @@ static struct glibc_adapter_t pthread_adapters[] = {
     ADAPT_INDIRECT(pthread_rwlockattr_destroy),
     ADAPT_INDIRECT(pthread_rwlockattr_setpshared),
     ADAPT_INDIRECT(pthread_rwlockattr_getpshared),
+
+    ADAPT_INDIRECT(pthread_sigmask),
+    ADAPT_TO(__pthread_barrier_init, pthread_barrier_init),
+    ADAPT_INDIRECT(__pthread_get_minstack),
+    ADAPT_INDIRECT(pthread_cancel),
+
 };
 
 void register_adapters_pthread() { REGISTER_ADAPTERS_BY_CLASS(pthread); }
