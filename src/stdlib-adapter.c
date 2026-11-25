@@ -73,6 +73,7 @@ static struct glibc_adapter_t stdlib_adapters[] = {
     ADAPT_DIRECT(mkstemp),
     ADAPT_TO(mkstemp64, mkstemp),
     ADAPT_DIRECT(rand),
+    ADAPT_DIRECT(random),
 
     ADAPT_TO(__isoc23_strtol, strtol),
     ADAPT_TO(__isoc23_strtoul, strtoul),
