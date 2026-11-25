@@ -5,7 +5,7 @@
 
 #include "adapter-register.h"
 
-#define VERSION "V0.0.3"
+#define VERSION "V0.0.4"
 
 extern const void *find_symbol_adapter(const char *sym) __attribute__((visibility("default")));
 
